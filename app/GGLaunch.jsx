@@ -834,65 +834,107 @@ function Styles() {
       a { color: inherit; text-decoration: none; }
       
       /* ============================================================== */
-      /* RESPONSIVE — mobile-first overrides                            */
+      /* RESPONSIVE                                                     */
       /* ============================================================== */
       
-      /* Tablet — 768px and below */
+      /* GLOBAL - prevent any horizontal overflow on mobile */
+      html, body {
+        overflow-x: hidden;
+        max-width: 100vw;
+      }
+      
+      /* Mobile + tablet — 900px and below */
       @media (max-width: 900px) {
+        /* Disable any leftover heavy effects */
+        .gg-magnetic::after { display: none !important; }
+        body::before, body::after {
+          opacity: 0.5;
+        }
+        
+        /* Reduce all section padding globally */
+        section {
+          padding-left: 16px !important;
+          padding-right: 16px !important;
+        }
+        
+        /* HERO */
         .gg-resp-hero {
           grid-template-columns: 1fr !important;
-          padding: 32px 20px 0 !important;
+          padding: 24px 16px 0 !important;
           min-height: auto !important;
-          gap: 32px !important;
+          gap: 16px !important;
+          max-width: 100vw !important;
         }
         .gg-resp-hero h1 {
-          font-size: clamp(40px, 9vw, 64px) !important;
+          font-size: clamp(38px, 9vw, 60px) !important;
+          line-height: 1.05 !important;
+        }
+        .gg-resp-hero p {
+          font-size: 16px !important;
         }
         .gg-resp-hero-vault-wrap {
-          height: 480px !important;
+          height: 420px !important;
           order: -1 !important;
+          width: 100% !important;
+          max-width: 100vw !important;
+          overflow: hidden !important;
+        }
+        /* Scale down the hero vault container */
+        .gg-resp-hero-vault-wrap > div {
+          transform: scale(0.7) !important;
+          transform-origin: center center !important;
         }
         .gg-resp-stats-4 {
           grid-template-columns: repeat(2, 1fr) !important;
           max-width: 100% !important;
+          margin-top: 32px !important;
         }
+        .gg-resp-stats-4 > * {
+          padding: 16px 14px !important;
+        }
+        
+        /* MECHANISM FLOW */
         .gg-resp-mechanism-grid {
           grid-template-columns: 1fr !important;
-          gap: 32px !important;
+          gap: 24px !important;
           margin-bottom: 48px !important;
         }
         .gg-resp-mechanism-flow {
           grid-template-columns: 1fr !important;
+          gap: 32px !important;
         }
-        .gg-resp-mechanism-flow > * {
-          padding: 0 0 24px !important;
+        .gg-resp-mechanism-flow > div {
+          padding: 0 !important;
           text-align: left !important;
-          display: grid !important;
-          grid-template-columns: 100px 1fr !important;
-          gap: 20px !important;
-          align-items: start !important;
         }
-        .gg-resp-mechanism-flow > * > div:first-child {
+        .gg-resp-mechanism-flow > div > div:first-child {
           height: auto !important;
-          margin-bottom: 0 !important;
+          margin-bottom: 16px !important;
+          justify-content: flex-start !important;
         }
-        .gg-resp-mechanism-flow > * > div:nth-child(2) {
-          grid-column: 1 !important;
+        .gg-resp-flow-line, .gg-resp-flow-pulse {
+          display: none !important;
         }
+        
+        /* COMPARISON */
         .gg-resp-comparison {
           grid-template-columns: 1fr !important;
         }
-        .gg-resp-comparison > * {
+        .gg-resp-comparison > div {
           border-right: none !important;
           border-bottom: 1px solid var(--line-2) !important;
+          padding: 24px !important;
         }
-        .gg-resp-comparison > *:last-child {
+        .gg-resp-comparison > div:last-child {
           border-bottom: none !important;
         }
-        .gg-resp-token-grid {
-          grid-template-columns: 1fr !important;
-          gap: 16px !important;
+        .gg-comparison-vault-wrap {
+          height: 160px !important;
+          margin-bottom: 24px !important;
+          padding-bottom: 24px !important;
         }
+        
+        /* TOKEN PAGE */
         .gg-resp-token-detail {
           grid-template-columns: 1fr !important;
           gap: 16px !important;
@@ -908,6 +950,19 @@ function Styles() {
           border-bottom: 1px solid var(--line) !important;
           min-height: 280px !important;
         }
+        .gg-token-header {
+          flex-direction: column !important;
+          align-items: flex-start !important;
+          gap: 16px !important;
+        }
+        .gg-token-header > div:first-child {
+          gap: 16px !important;
+        }
+        .gg-token-header h1 {
+          font-size: 28px !important;
+        }
+        
+        /* STAKE */
         .gg-resp-stake-position {
           grid-template-columns: 1fr !important;
         }
@@ -918,6 +973,7 @@ function Styles() {
         .gg-resp-stake-metrics {
           grid-template-columns: repeat(2, 1fr) !important;
           gap: 16px !important;
+          padding: 20px !important;
         }
         .gg-resp-stake-actions {
           flex-direction: row !important;
@@ -931,6 +987,8 @@ function Styles() {
         .gg-resp-stake-actions > *:last-child {
           border-right: none !important;
         }
+        
+        /* DOCS */
         .gg-resp-docs {
           grid-template-columns: 1fr !important;
           gap: 24px !important;
@@ -940,10 +998,12 @@ function Styles() {
           padding: 16px !important;
           border: 1px solid var(--line-2) !important;
           background: var(--bg-1) !important;
+          margin-bottom: 16px !important;
         }
+        
+        /* DISCOVER TABLE - cards instead of grid columns */
         .gg-resp-discover-table-row,
         .gg-resp-discover-table-head {
-          display: grid !important;
           grid-template-columns: 36px 1fr auto !important;
           gap: 12px !important;
           padding: 14px 16px !important;
@@ -957,87 +1017,81 @@ function Styles() {
           margin-top: 4px !important;
           font-family: var(--mono) !important;
         }
+        
+        /* GRADUATING NOW - horizontal scroll */
         .gg-resp-graduating-strip {
-          grid-template-columns: repeat(5, 240px) !important;
+          grid-template-columns: repeat(5, 220px) !important;
           overflow-x: auto !important;
           padding-bottom: 8px !important;
           scrollbar-width: none !important;
+          -webkit-overflow-scrolling: touch !important;
         }
         .gg-resp-graduating-strip::-webkit-scrollbar { display: none; }
-        .gg-resp-flow-line {
-          display: none !important;
-        }
-        .gg-resp-flow-pulse {
-          display: none !important;
-        }
-        .gg-nav-search-hint {
-          display: none !important;
-        }
-        .gg-nav-wallet-balance {
+        
+        /* NAV */
+        .gg-nav-search-hint, .gg-nav-wallet-balance, .gg-nav-desktop-links {
           display: none !important;
         }
         .gg-nav-mobile-menu-btn {
           display: flex !important;
         }
-        .gg-nav-desktop-links {
-          display: none !important;
-        }
+        
+        /* PIP VAULT */
         .gg-pip-vault {
           bottom: 16px !important;
           right: 16px !important;
+          left: 16px !important;
         }
-        .gg-pip-vault > * {
+        .gg-pip-vault > div {
           padding: 10px !important;
           gap: 10px !important;
           min-width: 0 !important;
         }
-        .gg-pip-vault svg { width: 36px !important; height: 39px !important; }
-        .gg-comparison-vault-wrap {
-          height: 160px !important;
-          margin-bottom: 24px !important;
-          padding-bottom: 24px !important;
-        }
-        .gg-section-pad-lg { padding: 80px 20px !important; }
-        .gg-section-pad-xl { padding: 120px 20px !important; }
-        .gg-page-pad { padding: 32px 20px 80px !important; }
-        .gg-token-header { gap: 16px !important; }
-        .gg-token-header > div:first-child { gap: 16px !important; }
+        
+        /* HERO TILT - disable parallax on touch */
         .gg-tilt-disable {
           transform: none !important;
+          perspective: none !important;
         }
+        
+        /* Hide some orbital readouts on mobile */
+        .gg-resp-orbital-readout-hide-mobile {
+          display: none !important;
+        }
+        
+        /* Touch target minimum */
         .gg-btn { min-height: 44px; }
-        .gg-magnetic::after { display: none !important; }
+        
+        /* Section padding helpers */
+        .gg-section-pad-lg { padding: 64px 16px !important; }
+        .gg-section-pad-xl { padding: 80px 16px !important; }
+        .gg-page-pad { padding: 24px 16px 64px !important; }
+        
+        /* Page max-width containers should never overflow */
+        .gg-fade-in > div, .gg-page-enter > div {
+          max-width: 100% !important;
+        }
       }
       
       /* Phone — 480px and below */
       @media (max-width: 480px) {
         .gg-resp-hero h1 {
-          font-size: clamp(36px, 11vw, 52px) !important;
+          font-size: clamp(34px, 11vw, 48px) !important;
         }
         .gg-resp-hero-vault-wrap {
-          height: 380px !important;
+          height: 340px !important;
         }
-        .gg-resp-hero-vault-wrap > * {
-          transform: scale(0.7);
-          transform-origin: center center;
-        }
-        .gg-resp-stats-4 {
-          grid-template-columns: 1fr 1fr !important;
-        }
-        .gg-resp-stats-4 > * {
-          padding: 16px 14px !important;
+        .gg-resp-hero-vault-wrap > div {
+          transform: scale(0.55) !important;
         }
         .gg-resp-stats-4 > * .num {
-          font-size: 18px !important;
+          font-size: 16px !important;
         }
         .gg-resp-graduating-strip {
           grid-template-columns: repeat(5, 200px) !important;
         }
         .gg-resp-stake-metrics {
           grid-template-columns: 1fr 1fr !important;
-        }
-        .gg-resp-orbital-readout-hide-mobile {
-          display: none !important;
         }
       }
     `}</style>
@@ -2019,7 +2073,7 @@ function FlowDiagram() {
 // COMPARISON — two flows side by side
 function ComparisonFlow() {
   return (
-    <section style={{ padding: '120px 24px', background: 'var(--bg-1)', borderBottom: '1px solid var(--line)' }}>
+    <section className="gg-section-pad-xl" style={{ padding: '120px 24px', background: 'var(--bg-1)', borderBottom: '1px solid var(--line)' }}>
       <div style={{ maxWidth: 1400, margin: '0 auto' }}>
         <div style={{ marginBottom: 80, maxWidth: 720 }}>
           <span style={{ fontSize: 12, color: 'var(--acid)', letterSpacing: '0.04em', fontWeight: 500, textTransform: 'uppercase' }}>§ The Difference</span>
@@ -2218,7 +2272,7 @@ function GoodVaultVisual({ active }) {
 // MANIFESTO
 function Manifesto() {
   return (
-    <section style={{ padding: '180px 24px', borderBottom: '1px solid var(--line)', position: 'relative', overflow: 'hidden' }}>
+    <section className="gg-section-pad-xl" style={{ padding: '180px 24px', borderBottom: '1px solid var(--line)', position: 'relative', overflow: 'hidden' }}>
       {/* atmospheric backdrop */}
       <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 900, height: 600, background: 'radial-gradient(ellipse, rgba(159,122,234,0.05) 0%, transparent 65%)', filter: 'blur(100px)', pointerEvents: 'none' }} />
       
@@ -2455,7 +2509,7 @@ function DiscoverPage({ navigate, tokens }) {
   }, [tokens, filter, sort, search]);
 
   return (
-    <div style={{ maxWidth: 1400, margin: '0 auto', padding: '64px 24px 120px' }} className="gg-fade-in">
+    <div style={{ maxWidth: 1400, margin: '0 auto', padding: '64px 24px 120px' }} className="gg-fade-in gg-page-pad">
       <div style={{ marginBottom: 48 }}>
         <span style={{ fontSize: 12, color: 'var(--acid)', letterSpacing: '0.04em', fontWeight: 500, textTransform: 'uppercase' }}>Markets</span>
         <h1 style={{ fontSize: 'clamp(40px, 5vw, 56px)', margin: '14px 0 0', fontWeight: 500, letterSpacing: '-0.03em', lineHeight: 1.02 }}>
@@ -2600,7 +2654,7 @@ function TokenPage({ token, navigate, walletConnected, connectWallet, solBalance
   };
 
   return (
-    <div style={{ maxWidth: 1400, margin: '0 auto', padding: '40px 24px 120px' }} className="gg-fade-in">
+    <div style={{ maxWidth: 1400, margin: '0 auto', padding: '40px 24px 120px' }} className="gg-fade-in gg-page-pad">
       {/* breadcrumb */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 32, fontSize: 13 }}>
         <button onClick={() => navigate('discover')} style={{ background: 'none', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer', fontFamily: 'var(--sans)', fontSize: 13, fontWeight: 500 }}>Markets</button>
@@ -2973,7 +3027,7 @@ function StakePage({ navigate, positions, tokens, walletConnected, connectWallet
   };
 
   return (
-    <div style={{ maxWidth: 1400, margin: '0 auto', padding: '64px 24px 120px' }} className="gg-fade-in">
+    <div style={{ maxWidth: 1400, margin: '0 auto', padding: '64px 24px 120px' }} className="gg-fade-in gg-page-pad">
       <div style={{ marginBottom: 48 }}>
         <span style={{ fontSize: 12, color: 'var(--acid)', letterSpacing: '0.04em', fontWeight: 500, textTransform: 'uppercase' }}>Your Positions</span>
         <h1 style={{ fontSize: 'clamp(40px, 5vw, 56px)', margin: '14px 0 0', fontWeight: 500, letterSpacing: '-0.03em', lineHeight: 1.02 }}>
@@ -3112,7 +3166,7 @@ function LaunchPage({ navigate, walletConnected, connectWallet, setTokens, showT
   return (
     <>
     {launching && <DeploymentOverlay symbol={form.symbol || 'TOKEN'} />}
-    <div style={{ maxWidth: 760, margin: '0 auto', padding: '64px 24px 120px' }} className="gg-fade-in">
+    <div style={{ maxWidth: 760, margin: '0 auto', padding: '64px 24px 120px' }} className="gg-fade-in gg-page-pad">
       <div style={{ marginBottom: 48 }}>
         <span style={{ fontSize: 12, color: 'var(--acid)', letterSpacing: '0.04em', fontWeight: 500, textTransform: 'uppercase' }}>New Token</span>
         <h1 style={{ fontSize: 'clamp(40px, 5vw, 56px)', margin: '14px 0 0', fontWeight: 500, letterSpacing: '-0.03em', lineHeight: 1.02 }}>
@@ -3253,7 +3307,7 @@ function DocsPage() {
   ];
 
   return (
-    <div style={{ maxWidth: 1100, margin: '0 auto', padding: '64px 24px 120px' }} className="gg-fade-in">
+    <div style={{ maxWidth: 1100, margin: '0 auto', padding: '64px 24px 120px' }} className="gg-fade-in gg-page-pad">
       <div style={{ marginBottom: 64 }}>
         <span style={{ fontSize: 12, color: 'var(--acid)', letterSpacing: '0.04em', fontWeight: 500, textTransform: 'uppercase' }}>Protocol Specification · v0.1</span>
         <h1 style={{ fontSize: 'clamp(40px, 5vw, 64px)', margin: '14px 0 0', fontWeight: 500, letterSpacing: '-0.03em', lineHeight: 1.02 }}>
