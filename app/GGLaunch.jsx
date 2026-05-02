@@ -1436,8 +1436,8 @@ function HomePage({ navigate, tokens, tvl, feesGenerated }) {
       <Manifesto />
       <TheTape />
       <TheForge />
-      <TheSeal />
       <Reveal><FinalCTA navigate={navigate} /></Reveal>
+      <TheSeal />
       {showFloater && <FloatingVault />}
     </div>
   );
@@ -1791,31 +1791,36 @@ function HeroVault() {
   useEffect(() => {
     let cancelled = false;
     const seq = async () => {
-      // CURVE: fill 20 → 95
+      // ACT 1 — THE FILL (~4s): rapid climb 20 → 95
       for (let i = 20; i <= 95; i += 1) {
         if (cancelled) return;
-        await new Promise(r => setTimeout(r, 75));
+        await new Promise(r => setTimeout(r, 50));
         setFillPct(i);
       }
       if (cancelled) return;
-      // small pause at the brim
-      await new Promise(r => setTimeout(r, 300));
-      // SEALING
+      
+      // ACT 2 — THE THRESHOLD (~1s): brief hold at the brim, tension
+      await new Promise(r => setTimeout(r, 900));
+      if (cancelled) return;
+      
+      // ACT 3 — THE SEAL (~2s): the dramatic moment
       setPhase('sealing');
       setFlashKey(k => k + 1);
-      await new Promise(r => setTimeout(r, 1600));
+      await new Promise(r => setTimeout(r, 1800));
       if (cancelled) return;
-      // SEALED
+      
+      // ACT 4 — THE PROOF (~4s): sealed forever, fees compound
       setPhase('sealed');
       setFlashKey(k => k + 1);
-      await new Promise(r => setTimeout(r, 7000));
+      await new Promise(r => setTimeout(r, 4500));
       if (cancelled) return;
-      // RESET
+      
+      // RESET — quick fade out, snap back
       setPhase('curve');
       setFillPct(20);
     };
     seq();
-    const id = setInterval(seq, 16000);
+    const id = setInterval(seq, 12000);
     return () => { cancelled = true; clearInterval(id); };
   }, []);
 
@@ -1927,14 +1932,14 @@ function HeroVault() {
       <OrbitalReadout 
         position="top-left" 
         label="LP LOCKED" 
-        value={phase === 'sealed' ? '412.0 SOL' : '—'} 
-        active={phase === 'sealed'} 
+        value={phase === 'sealed' ? '412.0 SOL' : phase === 'sealing' ? 'transferring' : '—'} 
+        active={phase !== 'curve'} 
         color={color}
       />
       <OrbitalReadout 
         position="top-right" 
         label="STATUS" 
-        value={phase === 'curve' ? 'CURVE' : phase === 'sealing' ? 'SEALING' : 'SEALED'} 
+        value={phase === 'curve' ? (fillPct >= 95 ? 'THRESHOLD' : 'CURVE') : phase === 'sealing' ? 'SEALING' : 'SEALED'} 
         active={true}
         color={color}
       />
@@ -1948,8 +1953,8 @@ function HeroVault() {
       <OrbitalReadout 
         position="bottom-right" 
         label="WITHDRAW FN" 
-        value="NEVER" 
-        active={phase === 'sealed'}
+        value={phase === 'curve' ? 'present' : phase === 'sealing' ? 'REMOVING' : 'REMOVED'} 
+        active={phase !== 'curve'}
         color={color}
       />
 
@@ -1986,15 +1991,17 @@ function HeroVault() {
             <div style={{ fontSize: 11, color: 'var(--fg-mute)', letterSpacing: '0.04em', fontWeight: 500, textTransform: 'uppercase', marginBottom: 8, fontFamily: 'var(--mono)' }}>
               vault status
             </div>
-            <div key={`status-${phase}`} style={{ fontSize: 22, fontWeight: 500, color, letterSpacing: '-0.01em', animation: 'fadeIn 600ms ease' }}>
-              {phase === 'curve' && 'Accepting deposits'}
-              {phase === 'sealing' && 'Sealing vault…'}
+            <div key={`status-${phase}-${fillPct >= 95 ? 'brim' : 'fill'}`} style={{ fontSize: 22, fontWeight: 500, color, letterSpacing: '-0.01em', animation: 'fadeIn 500ms ease' }}>
+              {phase === 'curve' && fillPct < 95 && 'Curve filling'}
+              {phase === 'curve' && fillPct >= 95 && 'Threshold reached'}
+              {phase === 'sealing' && 'Sealing forever…'}
               {phase === 'sealed' && 'Permanently sealed'}
             </div>
-            <div key={`sub-${phase}-${fillPct}`} style={{ fontSize: 13, color: 'var(--fg-dim)', marginTop: 6, fontFamily: 'var(--mono)' }}>
-              {phase === 'curve' && `Curve filled · ${fillPct}%`}
-              {phase === 'sealing' && 'Transferring LP to Vault PDA'}
-              {phase === 'sealed' && 'Fees compounding · withdraw fn does not exist'}
+            <div key={`sub-${phase}-${fillPct >= 95 ? 'b' : Math.floor(fillPct/10)}`} style={{ fontSize: 13, color: 'var(--fg-dim)', marginTop: 6, fontFamily: 'var(--mono)', animation: 'fadeIn 400ms ease' }}>
+              {phase === 'curve' && fillPct < 95 && `${fillPct}% · approaching graduation`}
+              {phase === 'curve' && fillPct >= 95 && 'Vault PDA initializing'}
+              {phase === 'sealing' && 'LP transferred · withdraw fn removed'}
+              {phase === 'sealed' && 'Fees compounding · ∞'}
             </div>
           </div>
         </div>
@@ -3398,13 +3405,12 @@ function TheForge() {
 // The "raw mass" that becomes a vault — abstract glowing polygon
 function ForgeMass({ progress, matColor, holding }) {
   const id = useMemo(() => 'fm' + Math.random().toString(36).slice(2, 8), []);
-  // morphing polygon — 9 points that wobble
   const [phase, setPhase] = useState(0);
   
   useEffect(() => {
     let raf;
     const tick = () => {
-      setPhase(p => p + 0.02);
+      setPhase(p => p + 0.025);
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
@@ -3412,74 +3418,222 @@ function ForgeMass({ progress, matColor, holding }) {
   }, []);
   
   const cx = 120, cy = 120;
-  const wobble = holding ? 18 : 12;
-  // Generate organic blob points
-  const pts = [];
-  const segments = 12;
-  for (let i = 0; i < segments; i++) {
-    const a = (Math.PI * 2 / segments) * i;
-    const wob = Math.sin(phase * 2 + i * 0.7) * wobble + Math.cos(phase * 1.3 + i * 0.4) * (wobble * 0.6);
-    const r = 80 + wob - (progress * 0.2);
-    pts.push([cx + r * Math.cos(a), cy + r * Math.sin(a)]);
-  }
+  const baseR = 88;
   
-  // Build smooth path using bezier curves
-  let path = `M ${pts[0][0]} ${pts[0][1]}`;
-  for (let i = 0; i < pts.length; i++) {
-    const cur = pts[i];
-    const next = pts[(i + 1) % pts.length];
-    const mx = (cur[0] + next[0]) / 2;
-    const my = (cur[1] + next[1]) / 2;
-    path += ` Q ${cur[0]} ${cur[1]} ${mx} ${my}`;
+  // Roughness inversely proportional to progress: chaotic raw → clean hex at 100%
+  // 0% progress: heavy chaos (roughness ~14)
+  // 100% progress: zero roughness (perfect hex)
+  const roughness = (1 - progress / 100) * 14 + (holding ? 2 : 0);
+  
+  // Heat shimmer also scales — most intense when raw, calms as it forges
+  const heatAmp = (1 - progress / 100) * 6;
+  
+  // Build the hex with rough edges. 6 vertices, but each edge has subdivisions
+  // that wobble outward to create the rough/jagged "uncut metal" look.
+  const buildPath = () => {
+    const subdivisions = 8; // points per edge
+    const allPts = [];
+    
+    for (let v = 0; v < 6; v++) {
+      const a1 = (Math.PI / 3) * v - Math.PI / 2;
+      const a2 = (Math.PI / 3) * (v + 1) - Math.PI / 2;
+      
+      const v1x = cx + baseR * Math.cos(a1);
+      const v1y = cy + baseR * Math.sin(a1);
+      const v2x = cx + baseR * Math.cos(a2);
+      const v2y = cy + baseR * Math.sin(a2);
+      
+      // The vertex itself — slight wobble even at the corner
+      const cornerRough = roughness * 0.4;
+      const cornerWob = Math.sin(phase * 1.8 + v * 1.3) * cornerRough;
+      allPts.push([
+        v1x + Math.cos(a1) * cornerWob,
+        v1y + Math.sin(a1) * cornerWob
+      ]);
+      
+      // Subdivision points along the edge — these are where the roughness lives
+      for (let s = 1; s < subdivisions; s++) {
+        const t = s / subdivisions;
+        const baseEx = v1x + (v2x - v1x) * t;
+        const baseEy = v1y + (v2y - v1y) * t;
+        
+        // Outward normal direction (perpendicular to edge, pointing away from center)
+        const edgeDx = v2x - v1x;
+        const edgeDy = v2y - v1y;
+        const len = Math.hypot(edgeDx, edgeDy);
+        const nx = -edgeDy / len;
+        const ny = edgeDx / len;
+        
+        // Two layers of noise — slow base wobble + fast detail
+        const noise1 = Math.sin(phase * 1.5 + v * 2.1 + s * 0.9) * roughness;
+        const noise2 = Math.cos(phase * 3.2 + v * 1.7 + s * 1.4) * (roughness * 0.5);
+        const noise = noise1 + noise2;
+        
+        // Bias outward (positive normal direction) so it looks like extra material, not gaps
+        const offset = noise * 0.6 + Math.abs(noise) * 0.4;
+        
+        allPts.push([
+          baseEx + nx * offset,
+          baseEy + ny * offset
+        ]);
+      }
+    }
+    
+    let path = `M ${allPts[0][0].toFixed(2)} ${allPts[0][1].toFixed(2)}`;
+    for (let i = 1; i < allPts.length; i++) {
+      path += ` L ${allPts[i][0].toFixed(2)} ${allPts[i][1].toFixed(2)}`;
+    }
+    return path + ' Z';
+  };
+  
+  const path = buildPath();
+  
+  // Color logic: raw is hot orange, transitions to amber, to purple-ish, to acid as progress fills
+  // matColor handles the broad shift, but interior should still feel "molten" early on
+  
+  // Heat distortion overlays — visible when raw, fade as it forges
+  const heatLines = [];
+  if (progress < 80 && heatAmp > 0.5) {
+    for (let i = 0; i < 5; i++) {
+      const y = cy - 40 + i * 20;
+      const offset = Math.sin(phase * 2 + i * 1.5) * heatAmp;
+      heatLines.push({ y, offset, opacity: (1 - progress / 100) * 0.25 });
+    }
   }
-  path += ' Z';
   
   return (
-    <svg width="240" height="240" viewBox="0 0 240 240" style={{ display: 'block' }}>
+    <svg width="240" height="240" viewBox="0 0 240 240" style={{ display: 'block', overflow: 'visible' }}>
       <defs>
-        <radialGradient id={`fmg-${id}`} cx="0.5" cy="0.4" r="0.6">
-          <stop offset="0%" stopColor="#fff" stopOpacity={0.3 + progress * 0.005} />
-          <stop offset="40%" stopColor={matColor} stopOpacity="0.8" />
-          <stop offset="100%" stopColor={matColor} stopOpacity="0.2" />
+        {/* Molten gradient — hot center, cooler edges */}
+        <radialGradient id={`fmg-${id}`} cx="0.5" cy="0.55" r="0.55">
+          <stop offset="0%" stopColor="#fff7e0" stopOpacity={0.6 + progress * 0.003} />
+          <stop offset="20%" stopColor={progress < 50 ? '#ffa84a' : matColor} stopOpacity="0.85" />
+          <stop offset="60%" stopColor={matColor} stopOpacity="0.65" />
+          <stop offset="100%" stopColor={matColor} stopOpacity="0.15" />
         </radialGradient>
-        <filter id={`fmblur-${id}`}>
-          <feGaussianBlur stdDeviation="2" />
-        </filter>
+        
+        {/* Glow gradient for outer halo */}
+        <radialGradient id={`fmgg-${id}`} cx="0.5" cy="0.5" r="0.5">
+          <stop offset="0%" stopColor={matColor} stopOpacity="0.4" />
+          <stop offset="100%" stopColor={matColor} stopOpacity="0" />
+        </radialGradient>
       </defs>
       
-      {/* outer glow */}
-      <path d={path} fill={matColor} opacity="0.2" filter={`blur(12px)`} />
+      {/* ambient outer glow — pulses brighter as forging progresses */}
+      <circle cx={cx} cy={cy} r={baseR + 30} fill={`url(#fmgg-${id})`} opacity={0.3 + progress * 0.005} />
       
-      {/* main mass */}
-      <path d={path} fill={`url(#fmg-${id})`} stroke={matColor} strokeWidth="1.2" opacity="0.95" />
+      {/* outer glow — soft halo around the rough hex */}
+      <path d={path} fill={matColor} opacity={0.25} style={{ filter: 'blur(14px)' }} />
       
-      {/* highlight crescent */}
-      <ellipse 
-        cx={cx - 20} cy={cy - 20} 
-        rx={45 + progress * 0.3} ry={30 + progress * 0.2} 
-        fill="#fff" opacity={0.15 + progress * 0.002}
-        filter={`blur(${8 - progress * 0.04}px)`}
+      {/* secondary closer glow */}
+      <path d={path} fill={matColor} opacity={0.4} style={{ filter: 'blur(4px)' }} />
+      
+      {/* main rough hex mass */}
+      <path 
+        d={path} 
+        fill={`url(#fmg-${id})`} 
+        stroke={matColor} 
+        strokeWidth={1 + progress * 0.012}
+        strokeOpacity={0.7 + progress * 0.003}
       />
       
-      {/* internal energy lines — appear as progress increases */}
-      {progress > 30 && Array.from({ length: 6 }).map((_, i) => {
-        const a = (Math.PI / 3) * i;
-        const r1 = 40;
-        const r2 = 70;
+      {/* Surface texture — small dark cracks/lines on the rough surface */}
+      {progress < 70 && Array.from({ length: 4 }).map((_, i) => {
+        const a = (Math.PI / 2) * i + phase * 0.3;
+        const r1 = baseR * 0.35;
+        const r2 = baseR * 0.7;
         return (
-          <line 
-            key={i}
-            x1={cx + r1 * Math.cos(a)} y1={cy + r1 * Math.sin(a)}
-            x2={cx + r2 * Math.cos(a)} y2={cy + r2 * Math.sin(a)}
-            stroke="#fff"
-            strokeWidth="0.8"
-            opacity={(progress - 30) / 100}
+          <line
+            key={`crack-${i}`}
+            x1={cx + r1 * Math.cos(a)}
+            y1={cy + r1 * Math.sin(a)}
+            x2={cx + r2 * Math.cos(a)}
+            y2={cy + r2 * Math.sin(a)}
+            stroke="#000"
+            strokeWidth="0.6"
+            opacity={(1 - progress / 100) * 0.3}
           />
         );
       })}
       
-      {/* core dot */}
-      <circle cx={cx} cy={cy} r={4 + progress * 0.06} fill="#fff" opacity={0.6 + progress * 0.004} />
+      {/* Molten interior glow — bright core that intensifies during forging */}
+      <ellipse 
+        cx={cx} 
+        cy={cy + 8} 
+        rx={baseR * 0.55 + Math.sin(phase * 2) * 4} 
+        ry={baseR * 0.4 + Math.cos(phase * 1.5) * 3} 
+        fill="#fff" 
+        opacity={0.12 + progress * 0.004}
+        style={{ filter: `blur(${10 - progress * 0.06}px)` }}
+      />
+      
+      {/* Specular highlight — top-left, like light catching a curved surface */}
+      <ellipse 
+        cx={cx - 18} cy={cy - 22} 
+        rx={32} ry={18}
+        fill="#fff" 
+        opacity={0.18 + progress * 0.003}
+        style={{ filter: `blur(${6 - progress * 0.04}px)` }}
+        transform={`rotate(-20 ${cx - 18} ${cy - 22})`}
+      />
+      
+      {/* Heat shimmer lines — only visible when raw/early forging */}
+      {heatLines.map((h, i) => (
+        <line
+          key={`heat-${i}`}
+          x1={cx - baseR * 0.7 + h.offset}
+          y1={h.y}
+          x2={cx + baseR * 0.7 - h.offset}
+          y2={h.y}
+          stroke={matColor}
+          strokeWidth="0.4"
+          opacity={h.opacity}
+          style={{ filter: 'blur(1px)' }}
+        />
+      ))}
+      
+      {/* Inner geometry begins to assert itself past 50% — faint inner hex outline */}
+      {progress > 50 && (() => {
+        const innerPts = [];
+        for (let v = 0; v < 6; v++) {
+          const a = (Math.PI / 3) * v - Math.PI / 2;
+          innerPts.push(`${cx + baseR * 0.7 * Math.cos(a)},${cy + baseR * 0.7 * Math.sin(a)}`);
+        }
+        return (
+          <polygon 
+            points={innerPts.join(' ')} 
+            fill="none" 
+            stroke="#fff" 
+            strokeWidth="0.6"
+            opacity={(progress - 50) / 80}
+          />
+        );
+      })()}
+      
+      {/* Energy radials past 70% — start to look like the finished vault's crystalline structure */}
+      {progress > 70 && Array.from({ length: 6 }).map((_, i) => {
+        const a = (Math.PI / 3) * i;
+        const r1 = 28;
+        const r2 = 60;
+        return (
+          <line 
+            key={`radial-${i}`}
+            x1={cx + r1 * Math.cos(a)} y1={cy + r1 * Math.sin(a)}
+            x2={cx + r2 * Math.cos(a)} y2={cy + r2 * Math.sin(a)}
+            stroke="#fff"
+            strokeWidth="0.7"
+            opacity={(progress - 70) / 60}
+          />
+        );
+      })}
+      
+      {/* Center core — emerges as forging completes */}
+      <circle 
+        cx={cx} cy={cy} 
+        r={3 + progress * 0.04} 
+        fill="#fff" 
+        opacity={0.5 + progress * 0.005}
+      />
     </svg>
   );
 }
