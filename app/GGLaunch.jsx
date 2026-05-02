@@ -3047,14 +3047,13 @@ function TapeBurst({ x, y, word }) {
   );
 }
 
+
 // ============================================================================
-// THE FORGE — pure visual storytelling. The whole product in 7 seconds.
+// THE FORGE — pure visual storytelling. The whole product, slowly.
 // ============================================================================
 function TheForge() {
-  const [phase, setPhase] = useState('appear'); // appear → buying → graduating → sealed → reset
-  const [tokenX, setTokenX] = useState(0);     // 0 → 1 across the frame
-  const [tokenY, setTokenY] = useState(0);     // 0 → 1 (high to low)
-  const [price, setPrice] = useState(0);
+  const [phase, setPhase] = useState('idle');         // idle → appear → buying → flash → sealed → fade
+  const [tokenT, setTokenT] = useState(0);            // 0 → 1 along the arc
   const [bubbles, setBubbles] = useState([]);
   const [trail, setTrail] = useState([]);
   const [reveal, setReveal] = useState(false);
@@ -3070,119 +3069,133 @@ function TheForge() {
     return () => obs.disconnect();
   }, []);
 
-  // The whole loop
+  // The slowed-down loop — total ~14 seconds, every beat earns its time
   useEffect(() => {
     if (!reveal) return;
     let cancelled = false;
     let rafId;
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
     const loop = async () => {
       while (!cancelled) {
-        // RESET state
-        setPhase('appear');
-        setTokenX(0);
-        setTokenY(0);
-        setPrice(0);
+        // RESET
+        setPhase('idle');
+        setTokenT(0);
         setBubbles([]);
         setTrail([]);
-        await sleep(1000);
+        await sleep(800);
         if (cancelled) return;
 
-        // PHASE: BUYING — token rises along an arc, bubbles bump it up
-        setPhase('buying');
-        const buyAmounts = [25, 80, 200, 420, 800];
-        const startTime = performance.now();
-        const duration = 3200;
-
-        const animateRise = () => {
-          if (cancelled) return;
-          const elapsed = performance.now() - startTime;
-          const t = Math.min(elapsed / duration, 1);
-          // ease-out curve for organic motion
-          const eased = 1 - Math.pow(1 - t, 2.5);
-          const newX = eased;
-          // Y travels in an arc — starts low, peaks higher
-          const newY = eased;
-          setTokenX(newX);
-          setTokenY(newY);
-          setPrice(Math.floor(eased * 67000));
-          setTrail(prev => {
-            const newPoint = { x: newX, y: newY, age: 0 };
-            const aged = prev.map(p => ({ ...p, age: p.age + 1 })).filter(p => p.age < 60);
-            return [...aged, newPoint];
-          });
-          if (t < 1) rafId = requestAnimationFrame(animateRise);
-        };
-        rafId = requestAnimationFrame(animateRise);
-
-        // Drop buy bubbles every ~500ms during buying phase
-        for (let i = 0; i < buyAmounts.length; i++) {
-          await sleep(500 + i * 50);
-          if (cancelled) return;
-          const bubbleId = Date.now() + Math.random();
-          setBubbles(prev => [...prev, { id: bubbleId, amount: buyAmounts[i] }]);
-          setTimeout(() => setBubbles(prev => prev.filter(b => b.id !== bubbleId)), 1400);
-        }
-
-        await sleep(700);
-        if (cancelled) return;
-
-        // PHASE: GRADUATING — flash
-        setPhase('graduating');
-        await sleep(1100);
-        if (cancelled) return;
-
-        // PHASE: SEALED — vault breathes for a moment
-        setPhase('sealed');
+        // APPEAR — token fades in, holds for a beat (~2s)
+        setPhase('appear');
         await sleep(2000);
         if (cancelled) return;
 
-        // PHASE: RESET — fade out, brief pause
-        setPhase('reset');
-        await sleep(700);
+        // BUYING — token travels along the arc with grace (~6s)
+        setPhase('buying');
+        const startTime = performance.now();
+        const duration = 6000;
+        const animate = () => {
+          if (cancelled) return;
+          const elapsed = performance.now() - startTime;
+          const t = Math.min(elapsed / duration, 1);
+          // Smooth ease-in-out for elegant motion
+          const eased = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+          setTokenT(eased);
+          setTrail(prev => {
+            // Sample less often — every ~80ms — for a cleaner trail
+            const last = prev[prev.length - 1];
+            if (!last || Math.abs(last.t - eased) > 0.012) {
+              return [...prev, { t: eased }].slice(-80);
+            }
+            return prev;
+          });
+          if (t < 1) rafId = requestAnimationFrame(animate);
+        };
+        rafId = requestAnimationFrame(animate);
+
+        // Drop 3 bubbles, evenly spaced, with breathing room
+        const bubbleAmounts = [80, 240, 690];
+        for (let i = 0; i < bubbleAmounts.length; i++) {
+          await sleep(1400 + i * 200);
+          if (cancelled) return;
+          const id = Date.now() + Math.random();
+          setBubbles(prev => [...prev, { id, amount: bubbleAmounts[i] }]);
+          setTimeout(() => setBubbles(prev => prev.filter(b => b.id !== id)), 2200);
+        }
+
+        // Wait for the arc to finish
+        await sleep(1400);
+        if (cancelled) return;
+
+        // FLASH — held white-hot moment (~1.5s)
+        setPhase('flash');
+        await sleep(1500);
+        if (cancelled) return;
+
+        // SEALED — vault rests in place, breathing (~3s)
+        setPhase('sealed');
+        await sleep(3000);
+        if (cancelled) return;
+
+        // FADE — slow exit before reset (~1s)
+        setPhase('fade');
+        await sleep(1000);
       }
     };
 
-    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
     loop();
     return () => { cancelled = true; cancelAnimationFrame(rafId); };
   }, [reveal]);
 
-  // Position calculations — token travels in arc from bottom-left to top-right
-  // Frame is 100% wide x 320px tall
-  const startX = 0.08;
-  const endX = 0.85;
-  const startY = 0.78;
-  const endY = 0.18;
-  const curX = startX + (endX - startX) * tokenX;
-  // Y uses ease-in for arc curve illusion
-  const arcY = startY + (endY - startY) * tokenY;
-  
+  // Arc geometry — bottom-left to top-right with a curved path
+  const startX = 0.10, endX = 0.88;
+  const startY = 0.78, endY = 0.20;
+  const arcAt = (t) => {
+    const x = startX + (endX - startX) * t;
+    // Curve: token rises faster than it travels right (gentle parabola)
+    const yLin = startY + (endY - startY) * t;
+    const arcLift = Math.sin(t * Math.PI) * 0.06;
+    return { x, y: yLin - arcLift };
+  };
+  const tokenPos = arcAt(tokenT);
+
+  // Caption per phase — held longer, faded more delicately
+  const captions = {
+    idle:    null,
+    appear:  { italic: 'Anyone makes', sans: 'a coin.' },
+    buying:  { italic: 'People', sans: 'buy it.' },
+    flash:   { italic: 'It', sans: 'graduates.' },
+    sealed:  { gradient: 'It locks. Forever.' },
+    fade:    null,
+  };
+  const caption = captions[phase];
+
   return (
     <section ref={sectionRef} className="gg-section-pad-xl" style={{ 
       position: 'relative',
-      padding: '160px 24px 180px',
+      padding: '180px 24px 200px',
       background: 'linear-gradient(180deg, var(--bg) 0%, #050811 50%, var(--bg) 100%)',
       borderBottom: '1px solid var(--line)',
       overflow: 'hidden',
     }}>
-      {/* atmospheric — phase-shifted */}
+      {/* Atmospheric glow shifts subtly with phase */}
       <div style={{
         position: 'absolute',
         inset: 0,
         background: phase === 'sealed' 
-          ? 'radial-gradient(ellipse 1000px 600px at 50% 50%, rgba(107,163,255,0.14) 0%, transparent 60%)'
-          : phase === 'graduating'
-          ? 'radial-gradient(ellipse 1000px 600px at 50% 50%, rgba(159,122,234,0.18) 0%, transparent 60%)'
-          : 'radial-gradient(ellipse 1000px 600px at 50% 50%, rgba(251,191,36,0.10) 0%, transparent 60%)',
-        transition: 'background 1000ms ease',
+          ? 'radial-gradient(ellipse 1100px 700px at 50% 50%, rgba(107,163,255,0.10) 0%, transparent 70%)'
+          : phase === 'flash'
+          ? 'radial-gradient(ellipse 1100px 700px at 50% 50%, rgba(159,122,234,0.14) 0%, transparent 70%)'
+          : 'radial-gradient(ellipse 1100px 700px at 50% 50%, rgba(251,191,36,0.06) 0%, transparent 70%)',
+        transition: 'background 1600ms ease',
         pointerEvents: 'none',
       }} />
       
       <div style={{ maxWidth: 880, margin: '0 auto', position: 'relative' }}>
         {/* Header */}
-        <div style={{ textAlign: 'center', marginBottom: 56, opacity: reveal ? 1 : 0, transform: reveal ? 'translateY(0)' : 'translateY(12px)', transition: 'opacity 1200ms ease, transform 1200ms ease' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 16, marginBottom: 28 }}>
+        <div style={{ textAlign: 'center', marginBottom: 80, opacity: reveal ? 1 : 0, transform: reveal ? 'translateY(0)' : 'translateY(12px)', transition: 'opacity 1600ms ease, transform 1600ms ease' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 16, marginBottom: 32 }}>
             <div style={{ width: 32, height: 1, background: 'linear-gradient(90deg, transparent, var(--acid))' }} />
             <span style={{ fontSize: 11, color: 'var(--acid)', letterSpacing: '0.18em', fontWeight: 600, textTransform: 'uppercase', fontFamily: 'var(--mono)' }}>The Loop</span>
             <div style={{ width: 32, height: 1, background: 'linear-gradient(270deg, transparent, var(--acid))' }} />
@@ -3194,199 +3207,234 @@ function TheForge() {
           </h2>
         </div>
         
-        {/* The visual frame */}
+        {/* The frame — clean, no chrome */}
         <div style={{ 
           position: 'relative',
-          height: 380,
-          maxWidth: 760,
+          height: 420,
+          maxWidth: 820,
           margin: '0 auto',
           opacity: reveal ? 1 : 0,
-          transition: 'opacity 1400ms ease 200ms',
+          transition: 'opacity 1800ms ease 200ms',
         }}>
-          {/* Faint grid backdrop */}
-          <svg viewBox="0 0 760 380" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.5 }}>
-            <defs>
-              <linearGradient id="forge-bg-grad" x1="0" y1="1" x2="1" y2="0">
-                <stop offset="0%" stopColor="var(--line)" stopOpacity="0.4" />
-                <stop offset="100%" stopColor="var(--line)" stopOpacity="0.1" />
-              </linearGradient>
-            </defs>
-            {/* Faint grid lines suggesting axes */}
-            {[0.25, 0.5, 0.75].map(t => (
-              <g key={t}>
-                <line x1="0" y1={380 * t} x2="760" y2={380 * t} stroke="var(--line)" strokeWidth="0.4" strokeDasharray="2 8" opacity="0.4" />
-                <line x1={760 * t} y1="0" x2={760 * t} y2="380" stroke="var(--line)" strokeWidth="0.4" strokeDasharray="2 8" opacity="0.4" />
-              </g>
-            ))}
-          </svg>
-          
-          {/* Trail — the path the token has traveled */}
-          {phase !== 'reset' && trail.length > 1 && (
-            <svg viewBox="0 0 760 380" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}>
+          {/* Trail — delicate ribbon of light */}
+          {trail.length > 1 && phase !== 'fade' && (
+            <svg viewBox="0 0 820 420" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}>
               <defs>
                 <linearGradient id="forge-trail-grad" x1="0" y1="1" x2="1" y2="0">
                   <stop offset="0%" stopColor="#fbbf24" stopOpacity="0" />
-                  <stop offset="50%" stopColor="#fbbf24" stopOpacity="0.6" />
-                  <stop offset="100%" stopColor="#9f7aea" stopOpacity="0.9" />
+                  <stop offset="40%" stopColor="#fbbf24" stopOpacity="0.45" />
+                  <stop offset="100%" stopColor="#9f7aea" stopOpacity="0.85" />
                 </linearGradient>
+                <filter id="forge-trail-glow">
+                  <feGaussianBlur stdDeviation="1.2" />
+                </filter>
               </defs>
+              {/* Soft glow underlay */}
               <path
-                d={`M ${trail.map((p, i) => {
-                  const tx = (startX + (endX - startX) * p.x) * 760;
-                  const ty = (startY + (endY - startY) * p.y) * 380;
-                  return `${i === 0 ? '' : 'L'} ${tx.toFixed(1)} ${ty.toFixed(1)}`;
-                }).join(' ')}`}
+                d={trail.map((p, i) => {
+                  const pos = arcAt(p.t);
+                  return `${i === 0 ? 'M' : 'L'} ${(pos.x * 820).toFixed(1)} ${(pos.y * 420).toFixed(1)}`;
+                }).join(' ')}
                 fill="none"
                 stroke="url(#forge-trail-grad)"
-                strokeWidth="1.5"
+                strokeWidth="3"
                 strokeLinecap="round"
-                opacity="0.8"
+                opacity="0.35"
+                filter="url(#forge-trail-glow)"
+              />
+              {/* Crisp inner line */}
+              <path
+                d={trail.map((p, i) => {
+                  const pos = arcAt(p.t);
+                  return `${i === 0 ? 'M' : 'L'} ${(pos.x * 820).toFixed(1)} ${(pos.y * 420).toFixed(1)}`;
+                }).join(' ')}
+                fill="none"
+                stroke="url(#forge-trail-grad)"
+                strokeWidth="0.9"
+                strokeLinecap="round"
+                opacity="0.85"
               />
             </svg>
           )}
           
-          {/* Buy bubbles — float up from the bottom */}
+          {/* Buy bubbles — slower, more elegant */}
           {bubbles.map(b => (
             <div key={b.id} style={{
               position: 'absolute',
-              left: `${(curX * 100) - 6}%`,
-              bottom: 16,
-              padding: '6px 12px',
-              background: 'rgba(74,222,128,0.12)',
-              border: '1px solid rgba(74,222,128,0.4)',
+              left: `${tokenPos.x * 100}%`,
+              top: `${tokenPos.y * 100}%`,
+              transform: 'translate(-50%, 0)',
+              padding: '7px 14px',
+              background: 'rgba(74,222,128,0.08)',
+              border: '1px solid rgba(74,222,128,0.30)',
+              backdropFilter: 'blur(6px)',
               color: 'var(--green)',
               fontSize: 13,
               fontFamily: 'var(--mono)',
-              fontWeight: 600,
+              fontWeight: 500,
               letterSpacing: '-0.01em',
-              animation: 'forgeBubbleRise 1.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards',
+              animation: 'forgeBubbleRise 2.2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards',
               pointerEvents: 'none',
               zIndex: 3,
+              whiteSpace: 'nowrap',
             }}>
               +${b.amount}
             </div>
           ))}
           
-          {/* Graduating flash */}
-          {phase === 'graduating' && (
+          {/* Token at its current arc position */}
+          {(phase === 'appear' || phase === 'buying') && (
             <div style={{
               position: 'absolute',
-              left: `${endX * 100}%`,
-              top: `${endY * 100}%`,
-              width: 200, height: 200,
-              marginLeft: -100, marginTop: -100,
-              borderRadius: '50%',
-              background: 'radial-gradient(circle, #fff 0%, rgba(159,122,234,0.6) 30%, transparent 70%)',
-              animation: 'forgeGradFlash 1100ms ease-out forwards',
-              pointerEvents: 'none',
-              mixBlendMode: 'screen',
-              zIndex: 4,
-            }} />
-          )}
-          
-          {/* The token / vault — moves along the arc */}
-          {phase !== 'reset' && (
-            <div style={{
-              position: 'absolute',
-              left: phase === 'sealed' || phase === 'graduating' ? `${endX * 100}%` : `${curX * 100}%`,
-              top: phase === 'sealed' || phase === 'graduating' ? `${endY * 100}%` : `${arcY * 100}%`,
+              left: `${tokenPos.x * 100}%`,
+              top: `${tokenPos.y * 100}%`,
               transform: 'translate(-50%, -50%)',
-              transition: phase === 'sealed' ? 'all 800ms cubic-bezier(0.2, 0.8, 0.2, 1)' : 'none',
+              animation: phase === 'appear' ? 'forgeTokenAppear 1400ms cubic-bezier(0.2, 0.8, 0.2, 1)' : 'none',
               zIndex: 5,
             }}>
-              {phase === 'sealed' ? (
-                <div style={{ animation: 'forgeVaultIn 600ms cubic-bezier(0.2, 0.8, 0.2, 1)' }}>
-                  <Vault size={80} state="sealed" fillPct={100} animate={true} breathe={true} />
-                </div>
-              ) : (
-                <div style={{ 
-                  display: 'flex', 
-                  flexDirection: 'column', 
-                  alignItems: 'center',
-                  gap: 6,
-                  animation: phase === 'appear' ? 'forgeTokenAppear 1000ms cubic-bezier(0.2, 0.8, 0.2, 1)' : 'none',
-                }}>
-                  {/* Token bubble */}
-                  <div className="gg-token-thumb" style={{ 
-                    width: 52, 
-                    height: 52, 
-                    fontSize: 28,
-                    boxShadow: phase === 'buying' ? '0 0 24px rgba(251,191,36,0.4), 0 0 40px rgba(251,191,36,0.2)' : '0 0 16px rgba(251,191,36,0.2)',
-                    transition: 'box-shadow 600ms',
-                  }}>🐕</div>
-                  {/* Price label */}
-                  <div style={{ 
-                    fontSize: 11, 
-                    fontFamily: 'var(--mono)', 
-                    color: 'var(--fg)', 
-                    fontWeight: 600,
-                    background: 'rgba(11,15,28,0.85)',
-                    border: '1px solid var(--line-2)',
-                    padding: '3px 8px',
-                    whiteSpace: 'nowrap',
-                  }}>
-                    BANANA · ${(price / 1000).toFixed(1)}K
-                  </div>
-                </div>
-              )}
+              <div className="gg-token-thumb" style={{ 
+                width: 56, 
+                height: 56, 
+                fontSize: 30,
+                boxShadow: phase === 'buying' 
+                  ? `0 0 30px rgba(251,191,36,${0.3 + tokenT * 0.4}), 0 0 60px rgba(251,191,36,${0.15 + tokenT * 0.2})` 
+                  : '0 0 20px rgba(251,191,36,0.25)',
+                transition: 'box-shadow 1200ms',
+              }}>🐕</div>
             </div>
           )}
           
-          {/* Bottom-corner labels suggesting axes */}
-          <div style={{ position: 'absolute', bottom: 8, left: 12, fontSize: 10, color: 'var(--fg-mute)', letterSpacing: '0.06em', fontFamily: 'var(--mono)', textTransform: 'uppercase', fontWeight: 600 }}>
-            launch
-          </div>
-          <div style={{ position: 'absolute', top: 8, right: 12, fontSize: 10, color: 'var(--fg-mute)', letterSpacing: '0.06em', fontFamily: 'var(--mono)', textTransform: 'uppercase', fontWeight: 600 }}>
-            graduation
-          </div>
+          {/* The held flash — graduation moment */}
+          {phase === 'flash' && (
+            <>
+              {/* Outer expanding ring */}
+              <div style={{
+                position: 'absolute',
+                left: `${endX * 100}%`,
+                top: `${endY * 100 - 6}%`,
+                width: 280, height: 280,
+                marginLeft: -140, marginTop: -140,
+                borderRadius: '50%',
+                background: 'radial-gradient(circle, #fff 0%, rgba(159,122,234,0.5) 30%, transparent 70%)',
+                animation: 'forgeFlashHold 1500ms ease-out forwards',
+                pointerEvents: 'none',
+                mixBlendMode: 'screen',
+                zIndex: 4,
+              }} />
+              {/* Bright core that holds */}
+              <div style={{
+                position: 'absolute',
+                left: `${endX * 100}%`,
+                top: `${endY * 100 - 6}%`,
+                width: 80, height: 80,
+                marginLeft: -40, marginTop: -40,
+                borderRadius: '50%',
+                background: 'radial-gradient(circle, #fff 0%, rgba(255,255,255,0.6) 40%, transparent 70%)',
+                animation: 'forgeCoreHold 1500ms ease-out forwards',
+                pointerEvents: 'none',
+                zIndex: 5,
+              }} />
+            </>
+          )}
+          
+          {/* The sealed vault — emerges from where the flash was */}
+          {phase === 'sealed' && (
+            <div style={{
+              position: 'absolute',
+              left: `${endX * 100}%`,
+              top: `${endY * 100 - 6}%`,
+              transform: 'translate(-50%, -50%)',
+              animation: 'forgeVaultEmerge 1600ms cubic-bezier(0.2, 0.8, 0.2, 1)',
+              zIndex: 5,
+            }}>
+              <Vault size={88} state="sealed" fillPct={100} animate={true} breathe={true} />
+            </div>
+          )}
+          
+          {/* Fade overlay during reset */}
+          {phase === 'fade' && (
+            <div style={{
+              position: 'absolute',
+              inset: 0,
+              background: 'var(--bg)',
+              animation: 'forgeFadeOut 1000ms ease forwards',
+              pointerEvents: 'none',
+              zIndex: 6,
+            }} />
+          )}
         </div>
         
-        {/* The captions — sync with phase */}
+        {/* The captions — hold longer, fade more delicately */}
         <div style={{ 
           textAlign: 'center', 
-          marginTop: 56, 
+          marginTop: 72, 
           minHeight: 80,
           opacity: reveal ? 1 : 0,
-          transition: 'opacity 1200ms ease 600ms',
+          transition: 'opacity 1600ms ease 600ms',
         }}>
           <div 
-            key={phase}
+            key={`cap-${phase}`}
             style={{ 
-              fontSize: 'clamp(20px, 2.4vw, 28px)', 
+              fontSize: 'clamp(22px, 2.6vw, 32px)', 
               fontWeight: 500, 
               letterSpacing: '-0.015em',
               color: 'var(--fg)',
-              animation: 'fadeIn 700ms ease',
-              marginBottom: 8,
+              animation: caption ? 'forgeCaptionIn 1200ms cubic-bezier(0.2, 0.8, 0.2, 1)' : 'none',
+              opacity: caption ? 1 : 0,
+              transition: 'opacity 800ms ease',
             }}
           >
-            {phase === 'appear' && <><span className="serif" style={{ fontStyle: 'italic', color: 'var(--fg-dim)' }}>Anyone makes</span> a coin.</>}
-            {phase === 'buying' && <><span className="serif" style={{ fontStyle: 'italic', color: 'var(--fg-dim)' }}>People</span> buy it.</>}
-            {phase === 'graduating' && <><span className="serif" style={{ fontStyle: 'italic', color: 'var(--fg-dim)' }}>It</span> graduates.</>}
-            {phase === 'sealed' && <span style={{ background: 'linear-gradient(120deg, var(--purple-l) 0%, var(--acid) 60%, var(--steel) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>It locks. Forever.</span>}
-            {phase === 'reset' && <span style={{ opacity: 0 }}>·</span>}
+            {caption?.italic && (
+              <>
+                <span className="serif" style={{ fontStyle: 'italic', color: 'var(--fg-dim)' }}>{caption.italic}</span>
+                {' '}
+                <span>{caption.sans}</span>
+              </>
+            )}
+            {caption?.gradient && (
+              <span style={{ background: 'linear-gradient(120deg, var(--purple-l) 0%, var(--acid) 60%, var(--steel) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+                {caption.gradient}
+              </span>
+            )}
           </div>
         </div>
       </div>
       
       <style>{`
         @keyframes forgeTokenAppear {
-          0% { opacity: 0; transform: translateY(20px) scale(0.6); }
-          100% { opacity: 1; transform: translateY(0) scale(1); }
+          0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+          100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
         }
         @keyframes forgeBubbleRise {
-          0% { transform: translateY(20px); opacity: 0; }
-          20% { opacity: 1; }
-          100% { transform: translateY(-90px); opacity: 0; }
+          0% { transform: translate(-50%, 20px); opacity: 0; }
+          15% { opacity: 1; }
+          85% { opacity: 1; }
+          100% { transform: translate(-50%, -100px); opacity: 0; }
         }
-        @keyframes forgeGradFlash {
-          0% { opacity: 0; transform: scale(0.4); }
-          30% { opacity: 1; transform: scale(1); }
-          100% { opacity: 0; transform: scale(2); }
+        @keyframes forgeFlashHold {
+          0% { opacity: 0; transform: scale(0.3); }
+          25% { opacity: 1; transform: scale(1); }
+          75% { opacity: 0.9; transform: scale(1.1); }
+          100% { opacity: 0; transform: scale(1.6); }
         }
-        @keyframes forgeVaultIn {
-          0% { opacity: 0; transform: scale(0.6); }
-          100% { opacity: 1; transform: scale(1); }
+        @keyframes forgeCoreHold {
+          0% { opacity: 0; transform: scale(0.2); }
+          20% { opacity: 1; transform: scale(1); }
+          70% { opacity: 0.95; transform: scale(1); }
+          100% { opacity: 0; transform: scale(0.7); }
+        }
+        @keyframes forgeVaultEmerge {
+          0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+          40% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+          100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        }
+        @keyframes forgeFadeOut {
+          0% { opacity: 0; }
+          100% { opacity: 1; }
+        }
+        @keyframes forgeCaptionIn {
+          0% { opacity: 0; transform: translateY(8px); }
+          100% { opacity: 1; transform: translateY(0); }
         }
       `}</style>
     </section>
