@@ -1435,6 +1435,7 @@ function HomePage({ navigate, tokens, tvl, feesGenerated }) {
       <TheNetwork tokens={tokens} />
       <Manifesto />
       <TheTape />
+      <TheForge />
       <TheSeal />
       <Reveal><FinalCTA navigate={navigate} /></Reveal>
       {showFloater && <FloatingVault />}
@@ -2769,10 +2770,33 @@ function TheNetwork({ tokens }) {
 // THE TAPE — typographic marquee, 3 lanes scrolling at different speeds
 // ============================================================================
 function TheTape() {
-  // Each lane has its own content, speed, and direction
   const lane1 = ['IMMUTABLE', '∞', 'SEALED', '◆', 'FOREVER', '∞', 'NO WITHDRAW', '◆', 'NO MULTISIG', '∞', 'NO EXIT', '◆', 'BY THE MATH', '∞'];
   const lane2 = ['vault.pda', '0xa7b3f5e9c2', 'permanent', '0xfc12d8a4', 'liquidity', '0x5b9e3a71', 'sealed', '0xc4f8e2b6'];
   const lane3 = ['THE STRONG ARE NOT ENTITLED TO TAKE FROM THE WEAK', '·', 'A MAN\'S WORD IS KEPT BY THE CHAIN BECAUSE NO MAN CAN BREAK IT', '·'];
+  
+  // Per-lane hover state — when set, that lane pauses
+  const [hover1, setHover1] = useState(false);
+  const [hover2, setHover2] = useState(false);
+  const [hover3, setHover3] = useState(false);
+  // Click bursts
+  const [bursts, setBursts] = useState([]);
+  
+  // Tooltips for hash strings
+  const tooltips = {
+    'vault.pda': 'Program-derived address. Deterministic. Held by no one.',
+    'permanent': 'No withdraw instruction in the program.',
+    'liquidity': 'LP tokens, sealed at graduation.',
+    'sealed': 'No external authority can unseal.',
+  };
+  
+  const handleClick = (e, word) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = rect.left + rect.width / 2;
+    const y = rect.top + rect.height / 2;
+    const id = Date.now() + Math.random();
+    setBursts(b => [...b, { id, x, y, word }]);
+    setTimeout(() => setBursts(b => b.filter(burst => burst.id !== id)), 1200);
+  };
   
   return (
     <section style={{ 
@@ -2796,67 +2820,146 @@ function TheTape() {
       <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 200, background: 'linear-gradient(90deg, var(--bg) 0%, transparent 100%)', zIndex: 5, pointerEvents: 'none' }} />
       <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 200, background: 'linear-gradient(270deg, var(--bg) 0%, transparent 100%)', zIndex: 5, pointerEvents: 'none' }} />
       
-      {/* Lane 1 — large display, slow, primary direction */}
-      <div style={{ 
-        display: 'flex', 
-        whiteSpace: 'nowrap', 
-        animation: 'tapeScroll 60s linear infinite',
-        marginBottom: 8,
-      }}>
-        {[...lane1, ...lane1, ...lane1].map((word, i) => (
-          <span key={i} style={{
-            fontSize: 'clamp(48px, 7vw, 96px)',
-            fontWeight: 500,
-            letterSpacing: '-0.03em',
-            padding: '0 32px',
-            color: word === '∞' ? 'var(--acid)' : word === '◆' ? 'var(--purple-l)' : 'var(--fg)',
-            fontFamily: word === '∞' || word === '◆' ? 'var(--sans)' : 'var(--sans)',
-            opacity: word === '∞' || word === '◆' ? 0.9 : 1,
-          }}>
-            {word}
-          </span>
-        ))}
+      {/* Click bursts (rendered in fixed position over tape) */}
+      {bursts.map(b => (
+        <TapeBurst key={b.id} x={b.x} y={b.y} word={b.word} />
+      ))}
+      
+      {/* Lane 1 — interactive: hover pauses, click bursts */}
+      <div 
+        style={{ 
+          display: 'flex', 
+          whiteSpace: 'nowrap', 
+          animation: 'tapeScroll 60s linear infinite',
+          animationPlayState: hover1 ? 'paused' : 'running',
+          marginBottom: 8,
+          transition: 'opacity 200ms',
+        }}
+      >
+        {[...lane1, ...lane1, ...lane1].map((word, i) => {
+          const isSym = word === '∞' || word === '◆';
+          return (
+            <span 
+              key={i}
+              onMouseEnter={() => setHover1(true)}
+              onMouseLeave={() => setHover1(false)}
+              onClick={(e) => handleClick(e, word)}
+              style={{
+                fontSize: 'clamp(48px, 7vw, 96px)',
+                fontWeight: 500,
+                letterSpacing: '-0.03em',
+                padding: '0 32px',
+                color: word === '∞' ? 'var(--acid)' : word === '◆' ? 'var(--purple-l)' : 'var(--fg)',
+                cursor: 'pointer',
+                transition: 'transform 240ms cubic-bezier(0.2, 0.8, 0.2, 1), text-shadow 240ms',
+                display: 'inline-block',
+                userSelect: 'none',
+              }}
+              onMouseOver={(e) => { 
+                e.currentTarget.style.transform = 'scale(1.08)'; 
+                e.currentTarget.style.textShadow = isSym 
+                  ? `0 0 24px ${word === '∞' ? '#6ba3ff' : '#9f7aea'}` 
+                  : '0 0 32px rgba(107,163,255,0.5)';
+              }}
+              onMouseOut={(e) => { 
+                e.currentTarget.style.transform = 'scale(1)'; 
+                e.currentTarget.style.textShadow = 'none';
+              }}
+            >
+              {word}
+            </span>
+          );
+        })}
       </div>
       
-      {/* Lane 2 — mono, faster, reverse direction, dimmer */}
+      {/* Lane 2 — mono, hash + word, hover reveals tooltip */}
       <div style={{ 
         display: 'flex', 
         whiteSpace: 'nowrap', 
         animation: 'tapeScrollReverse 40s linear infinite',
+        animationPlayState: hover2 ? 'paused' : 'running',
         marginBottom: 8,
       }}>
-        {[...lane2, ...lane2, ...lane2, ...lane2].map((word, i) => (
-          <span key={i} style={{
-            fontSize: 16,
-            fontFamily: 'var(--mono)',
-            color: word.startsWith('0x') ? 'var(--fg-mute)' : 'var(--fg-dim)',
-            padding: '0 24px',
-            letterSpacing: '0.04em',
-            fontWeight: 500,
-          }}>
+        {[...lane2, ...lane2, ...lane2, ...lane2].map((word, i) => {
+          const tip = tooltips[word];
+          return (
+            <span 
+              key={i}
+              onMouseEnter={() => setHover2(true)}
+              onMouseLeave={() => setHover2(false)}
+              style={{
+                fontSize: 16,
+                fontFamily: 'var(--mono)',
+                color: word.startsWith('0x') ? 'var(--fg-mute)' : 'var(--fg-dim)',
+                padding: '0 24px',
+                letterSpacing: '0.04em',
+                fontWeight: 500,
+                cursor: tip ? 'help' : 'default',
+                position: 'relative',
+                transition: 'color 200ms',
+              }}
+              onMouseOver={(e) => { 
+                if (tip) e.currentTarget.style.color = 'var(--acid)';
+                else e.currentTarget.style.color = 'var(--fg)';
+              }}
+              onMouseOut={(e) => { 
+                e.currentTarget.style.color = word.startsWith('0x') ? 'var(--fg-mute)' : 'var(--fg-dim)';
+              }}
+              title={tip}
+            >
+              {word}
+            </span>
+          );
+        })}
+      </div>
+      
+      {/* Lane 3 — serif italic, slowest, hover pauses */}
+      <div style={{ 
+        display: 'flex', 
+        whiteSpace: 'nowrap', 
+        animation: 'tapeScroll 90s linear infinite',
+        animationPlayState: hover3 ? 'paused' : 'running',
+      }}>
+        {[...lane3, ...lane3, ...lane3].map((word, i) => (
+          <span 
+            key={i} 
+            className="serif"
+            onMouseEnter={() => setHover3(true)}
+            onMouseLeave={() => setHover3(false)}
+            style={{
+              fontSize: 22,
+              fontStyle: 'italic',
+              color: word === '·' ? 'var(--acid)' : 'var(--fg-dim)',
+              padding: '0 24px',
+              fontWeight: 400,
+              letterSpacing: '-0.005em',
+              cursor: 'default',
+              transition: 'color 200ms',
+            }}
+            onMouseOver={(e) => { if (word !== '·') e.currentTarget.style.color = 'var(--fg)'; }}
+            onMouseOut={(e) => { e.currentTarget.style.color = word === '·' ? 'var(--acid)' : 'var(--fg-dim)'; }}
+          >
             {word}
           </span>
         ))}
       </div>
       
-      {/* Lane 3 — serif italic, the manifesto, slowest, dim */}
+      {/* Hint */}
       <div style={{ 
-        display: 'flex', 
-        whiteSpace: 'nowrap', 
-        animation: 'tapeScroll 90s linear infinite',
+        position: 'absolute', 
+        bottom: 16, 
+        left: '50%', 
+        transform: 'translateX(-50%)',
+        fontSize: 11, 
+        color: 'var(--fg-mute)', 
+        fontFamily: 'var(--mono)',
+        letterSpacing: '0.08em',
+        textTransform: 'uppercase',
+        opacity: 0.5,
+        pointerEvents: 'none',
+        zIndex: 6,
       }}>
-        {[...lane3, ...lane3, ...lane3].map((word, i) => (
-          <span key={i} className="serif" style={{
-            fontSize: 22,
-            fontStyle: 'italic',
-            color: word === '·' ? 'var(--acid)' : 'var(--fg-dim)',
-            padding: '0 24px',
-            fontWeight: 400,
-            letterSpacing: '-0.005em',
-          }}>
-            {word}
-          </span>
-        ))}
+        hover to pause · click to burst
       </div>
       
       <style>{`
@@ -2870,6 +2973,557 @@ function TheTape() {
         }
       `}</style>
     </section>
+  );
+}
+
+// Particle burst when a Tape word is clicked
+function TapeBurst({ x, y, word }) {
+  const particles = useMemo(() => {
+    const out = [];
+    for (let i = 0; i < 12; i++) {
+      const a = (Math.PI * 2 / 12) * i;
+      const dist = 80 + Math.random() * 60;
+      out.push({
+        endX: Math.cos(a) * dist,
+        endY: Math.sin(a) * dist,
+        color: i % 2 === 0 ? '#6ba3ff' : '#9f7aea',
+        size: 3 + Math.random() * 2,
+      });
+    }
+    return out;
+  }, []);
+  
+  return (
+    <div style={{
+      position: 'fixed',
+      left: x, top: y,
+      width: 0, height: 0,
+      pointerEvents: 'none',
+      zIndex: 50,
+    }}>
+      {/* central flash */}
+      <div style={{
+        position: 'absolute',
+        top: -40, left: -40,
+        width: 80, height: 80,
+        borderRadius: '50%',
+        background: 'radial-gradient(circle, #fff 0%, rgba(107,163,255,0.5) 30%, transparent 70%)',
+        animation: 'tapeBurstFlash 600ms ease-out forwards',
+        mixBlendMode: 'screen',
+      }} />
+      
+      {/* radiating particles */}
+      {particles.map((p, i) => (
+        <div key={i} style={{
+          position: 'absolute',
+          width: p.size, height: p.size,
+          borderRadius: '50%',
+          background: p.color,
+          boxShadow: `0 0 12px ${p.color}, 0 0 24px ${p.color}`,
+          animation: `tapeBurstParticle 1.2s cubic-bezier(0.2, 0.8, 0.4, 1) forwards`,
+          '--bx': `${p.endX}px`,
+          '--by': `${p.endY}px`,
+        }} />
+      ))}
+      
+      <style>{`
+        @keyframes tapeBurstFlash {
+          0% { opacity: 0.9; transform: scale(0.4); }
+          100% { opacity: 0; transform: scale(2); }
+        }
+        @keyframes tapeBurstParticle {
+          0% { transform: translate(0, 0) scale(1); opacity: 1; }
+          100% { transform: translate(var(--bx), var(--by)) scale(0); opacity: 0; }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+// ============================================================================
+// THE FORGE — interactive vault forging. Click and hold to seal a vault.
+// ============================================================================
+function TheForge() {
+  const [forgeProgress, setForgeProgress] = useState(0);   // 0 → 100
+  const [phase, setPhase] = useState('raw');                // raw → forging → sealing → sealed → reset
+  const [forgeCount, setForgeCount] = useState(0);
+  const [holding, setHolding] = useState(false);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [sparks, setSparks] = useState([]);
+  const [reveal, setReveal] = useState(false);
+  const containerRef = useRef(null);
+  const sectionRef = useRef(null);
+  
+  // Reveal on scroll
+  useEffect(() => {
+    if (!sectionRef.current) return;
+    const obs = new IntersectionObserver(
+      (entries) => entries.forEach(e => { if (e.isIntersecting) { setReveal(true); obs.unobserve(e.target); } }),
+      { threshold: 0.2 }
+    );
+    obs.observe(sectionRef.current);
+    return () => obs.disconnect();
+  }, []);
+  
+  // Track mouse for spark direction
+  useEffect(() => {
+    const handler = (e) => {
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      setMousePos({ x: e.clientX - cx, y: e.clientY - cy });
+    };
+    window.addEventListener('mousemove', handler);
+    return () => window.removeEventListener('mousemove', handler);
+  }, []);
+  
+  // Periodic ambient sparks when not interacting
+  useEffect(() => {
+    if (!reveal || phase !== 'raw') return;
+    const id = setInterval(() => {
+      const id = Math.random().toString(36).slice(2);
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 60 + Math.random() * 80;
+      const newSpark = {
+        id,
+        startX: 0, startY: 0,
+        endX: Math.cos(angle) * speed,
+        endY: Math.sin(angle) * speed,
+        color: '#fbbf24',
+      };
+      setSparks(s => [...s.slice(-12), newSpark]);
+      setTimeout(() => setSparks(s => s.filter(sp => sp.id !== id)), 1000);
+    }, 600);
+    return () => clearInterval(id);
+  }, [reveal, phase]);
+  
+  // Forge progress when holding
+  useEffect(() => {
+    if (!holding || phase === 'sealed' || phase === 'sealing') return;
+    setPhase('forging');
+    let raf;
+    const tick = () => {
+      setForgeProgress(p => {
+        const next = Math.min(100, p + 1.5);
+        if (next >= 100) {
+          // trigger sealing
+          setPhase('sealing');
+          setForgeCount(c => c + 1);
+          setTimeout(() => setPhase('sealed'), 1400);
+          setTimeout(() => { setPhase('raw'); setForgeProgress(0); }, 4000);
+          return 100;
+        }
+        raf = requestAnimationFrame(tick);
+        return next;
+      });
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [holding, phase]);
+  
+  // Decay progress when not holding
+  useEffect(() => {
+    if (holding || phase !== 'forging') return;
+    let raf;
+    const tick = () => {
+      setForgeProgress(p => {
+        const next = Math.max(0, p - 1.2);
+        if (next === 0) { setPhase('raw'); return 0; }
+        raf = requestAnimationFrame(tick);
+        return next;
+      });
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [holding, phase]);
+  
+  // Burst sparks on phase change to sealing
+  useEffect(() => {
+    if (phase !== 'sealing') return;
+    const burst = [];
+    for (let i = 0; i < 24; i++) {
+      const a = (Math.PI * 2 / 24) * i;
+      const speed = 120 + Math.random() * 80;
+      burst.push({
+        id: `burst-${Date.now()}-${i}`,
+        startX: 0, startY: 0,
+        endX: Math.cos(a) * speed,
+        endY: Math.sin(a) * speed,
+        color: i % 2 === 0 ? '#9f7aea' : '#6ba3ff',
+      });
+    }
+    setSparks(s => [...s, ...burst]);
+    setTimeout(() => setSparks([]), 1600);
+  }, [phase]);
+  
+  // Phase-driven color
+  const matColor = phase === 'sealed' ? '#6ba3ff' : phase === 'sealing' ? '#9f7aea' : phase === 'forging' ? `hsl(${30 + forgeProgress * 2.8}, 80%, 60%)` : '#fbbf24';
+  const vaultState = phase === 'sealed' ? 'sealed' : phase === 'sealing' ? 'sealing' : 'open';
+  
+  return (
+    <section ref={sectionRef} className="gg-section-pad-xl" style={{ 
+      position: 'relative',
+      padding: '160px 24px 180px',
+      background: 'linear-gradient(180deg, var(--bg) 0%, #050811 50%, var(--bg) 100%)',
+      borderBottom: '1px solid var(--line)',
+      overflow: 'hidden',
+    }}>
+      {/* atmospheric backdrop — shifts with phase */}
+      <div style={{
+        position: 'absolute',
+        inset: 0,
+        background: phase === 'sealed' 
+          ? 'radial-gradient(ellipse 1000px 700px at 50% 50%, rgba(107,163,255,0.18) 0%, transparent 60%)'
+          : phase === 'sealing'
+          ? 'radial-gradient(ellipse 1000px 700px at 50% 50%, rgba(159,122,234,0.20) 0%, transparent 60%)'
+          : phase === 'forging'
+          ? `radial-gradient(ellipse 1000px 700px at 50% 50%, rgba(251,191,36,${0.10 + forgeProgress * 0.0015}) 0%, transparent 60%)`
+          : 'radial-gradient(ellipse 1000px 700px at 50% 50%, rgba(251,191,36,0.08) 0%, transparent 60%)',
+        transition: 'background 800ms ease',
+        pointerEvents: 'none',
+      }} />
+      
+      <div style={{ maxWidth: 1100, margin: '0 auto', position: 'relative' }}>
+        {/* Eyebrow + heading */}
+        <div style={{ textAlign: 'center', marginBottom: 64, opacity: reveal ? 1 : 0, transform: reveal ? 'translateY(0)' : 'translateY(12px)', transition: 'opacity 1200ms ease, transform 1200ms ease' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 16, marginBottom: 32 }}>
+            <div style={{ width: 32, height: 1, background: `linear-gradient(90deg, transparent, ${matColor})`, transition: 'background 800ms' }} />
+            <span style={{ fontSize: 11, color: matColor, letterSpacing: '0.18em', fontWeight: 600, textTransform: 'uppercase', fontFamily: 'var(--mono)', transition: 'color 800ms' }}>The Forge</span>
+            <div style={{ width: 32, height: 1, background: `linear-gradient(270deg, transparent, ${matColor})`, transition: 'background 800ms' }} />
+          </div>
+          
+          <h2 style={{ fontSize: 'clamp(40px, 5.5vw, 72px)', margin: 0, fontWeight: 400, letterSpacing: '-0.035em', lineHeight: 1 }}>
+            <span className="serif" style={{ fontStyle: 'italic', fontWeight: 400, color: 'var(--fg-dim)' }}>You are not watching.</span><br />
+            <span style={{ fontWeight: 500 }}>You are sealing.</span>
+          </h2>
+          
+          <p style={{ marginTop: 24, fontSize: 16, color: 'var(--fg-dim)', maxWidth: 540, margin: '24px auto 0', lineHeight: 1.55 }}>
+            Press and hold the vault. When it fills, it seals. When it seals, it stays sealed. <span style={{ color: 'var(--fg)' }}>Forever.</span>
+          </p>
+        </div>
+        
+        {/* THE FORGE — interactive composition */}
+        <div ref={containerRef} style={{ 
+          position: 'relative', 
+          height: 520,
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center',
+          opacity: reveal ? 1 : 0,
+          transition: 'opacity 1600ms ease 200ms',
+        }}>
+          {/* Orbiting sigils */}
+          <ForgeSigils phase={phase} reveal={reveal} />
+          
+          {/* Sparks */}
+          {sparks.map(spark => (
+            <div key={spark.id} style={{
+              position: 'absolute',
+              top: '50%', left: '50%',
+              width: 3, height: 3,
+              borderRadius: '50%',
+              background: spark.color,
+              boxShadow: `0 0 8px ${spark.color}, 0 0 16px ${spark.color}`,
+              transform: `translate(${spark.startX}px, ${spark.startY}px)`,
+              animation: 'forgeSpark 1s cubic-bezier(0.2, 0.6, 0.4, 1) forwards',
+              '--end-x': `${spark.endX}px`,
+              '--end-y': `${spark.endY}px`,
+              pointerEvents: 'none',
+              zIndex: 5,
+            }} />
+          ))}
+          
+          {/* Halo glow behind forge */}
+          <div style={{
+            position: 'absolute',
+            width: 360,
+            height: 360,
+            borderRadius: '50%',
+            background: `radial-gradient(circle, ${matColor}33 0%, ${matColor}11 30%, transparent 60%)`,
+            filter: 'blur(32px)',
+            transition: 'background 800ms',
+            pointerEvents: 'none',
+          }} />
+          
+          {/* Sealing flash overlay */}
+          {phase === 'sealing' && (
+            <div style={{
+              position: 'absolute',
+              width: 400, height: 400,
+              borderRadius: '50%',
+              background: `radial-gradient(circle, #fff 0%, ${matColor}88 30%, transparent 60%)`,
+              animation: 'forgeSealFlash 1400ms ease-out 1',
+              pointerEvents: 'none',
+              mixBlendMode: 'screen',
+              zIndex: 4,
+            }} />
+          )}
+          
+          {/* The forge mass / vault */}
+          <button
+            onMouseDown={() => setHolding(true)}
+            onMouseUp={() => setHolding(false)}
+            onMouseLeave={() => setHolding(false)}
+            onTouchStart={(e) => { e.preventDefault(); setHolding(true); }}
+            onTouchEnd={() => setHolding(false)}
+            style={{
+              position: 'relative',
+              background: 'transparent',
+              border: 'none',
+              cursor: phase === 'sealed' ? 'default' : 'pointer',
+              padding: 0,
+              outline: 'none',
+              transform: holding ? 'scale(0.97)' : 'scale(1)',
+              transition: 'transform 200ms cubic-bezier(0.2, 0.8, 0.2, 1)',
+              zIndex: 3,
+            }}
+          >
+            {phase === 'raw' || phase === 'forging' ? (
+              <ForgeMass progress={forgeProgress} matColor={matColor} holding={holding} />
+            ) : (
+              <Vault size={240} state={vaultState} fillPct={100} animate={true} breathe={phase === 'sealed'} scanline={true} flash={phase === 'sealing'} />
+            )}
+          </button>
+          
+          {/* Progress indicator below */}
+          <div style={{
+            position: 'absolute',
+            bottom: 40,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            textAlign: 'center',
+            zIndex: 3,
+            minWidth: 320,
+          }}>
+            {/* Progress bar */}
+            <div style={{ 
+              width: 280, 
+              height: 2, 
+              background: 'var(--line-2)', 
+              margin: '0 auto 12px',
+              position: 'relative',
+              overflow: 'hidden',
+            }}>
+              <div style={{
+                position: 'absolute',
+                inset: 0,
+                width: `${forgeProgress}%`,
+                background: phase === 'sealed' ? 'var(--acid)' : phase === 'sealing' ? 'var(--purple)' : `linear-gradient(90deg, var(--amber), ${matColor})`,
+                boxShadow: `0 0 8px ${matColor}`,
+                transition: phase === 'sealed' ? 'all 600ms ease' : 'background 200ms',
+              }} />
+            </div>
+            
+            <div key={phase} style={{
+              fontSize: 12,
+              color: matColor,
+              fontFamily: 'var(--mono)',
+              fontWeight: 600,
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              transition: 'color 800ms',
+              animation: 'fadeIn 400ms ease',
+            }}>
+              {phase === 'raw' && 'Hold to forge'}
+              {phase === 'forging' && `Forging · ${Math.floor(forgeProgress)}%`}
+              {phase === 'sealing' && 'Sealing vault…'}
+              {phase === 'sealed' && '✓ Vault sealed forever'}
+            </div>
+          </div>
+        </div>
+        
+        {/* Bottom row — counter + caption */}
+        <div style={{ 
+          marginTop: 48, 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center',
+          gap: 16,
+          flexWrap: 'wrap',
+          opacity: reveal ? 1 : 0,
+          transition: 'opacity 1200ms ease 600ms',
+        }}>
+          <div style={{ 
+            display: 'inline-flex', 
+            alignItems: 'center', 
+            gap: 12,
+            padding: '10px 18px', 
+            border: '1px solid var(--line-2)', 
+            background: 'rgba(11,15,28,0.6)',
+            boxShadow: 'var(--hairline-top)',
+          }}>
+            <span style={{ fontSize: 11, color: 'var(--fg-mute)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>Forged this session</span>
+            <span style={{ fontSize: 18, fontFamily: 'var(--mono)', fontWeight: 500, color: forgeCount > 0 ? 'var(--acid)' : 'var(--fg-dim)', minWidth: 24, textAlign: 'right' }}>
+              {String(forgeCount).padStart(2, '0')}
+            </span>
+          </div>
+          
+          {forgeCount > 0 && (
+            <div className="serif" style={{ 
+              fontSize: 16, 
+              color: 'var(--fg-dim)', 
+              fontStyle: 'italic',
+              animation: 'fadeIn 600ms ease',
+            }}>
+              {forgeCount === 1 ? 'You sealed one.' : forgeCount < 5 ? 'You\'re getting it.' : 'You understand now.'}
+            </div>
+          )}
+        </div>
+      </div>
+      
+      <style>{`
+        @keyframes forgeSpark {
+          0% { transform: translate(0, 0) scale(1); opacity: 1; }
+          100% { transform: translate(var(--end-x), var(--end-y)) scale(0); opacity: 0; }
+        }
+        @keyframes forgeSealFlash {
+          0% { opacity: 0; transform: scale(0.5); }
+          30% { opacity: 1; transform: scale(1); }
+          100% { opacity: 0; transform: scale(1.8); }
+        }
+        @keyframes forgeSigilFloat {
+          0%, 100% { transform: translateY(0) rotate(0deg); }
+          50% { transform: translateY(-12px) rotate(180deg); }
+        }
+        @keyframes forgeSigilOrbit {
+          from { transform: rotate(0deg) translateX(var(--orbit-r)) rotate(0deg); }
+          to { transform: rotate(360deg) translateX(var(--orbit-r)) rotate(-360deg); }
+        }
+      `}</style>
+    </section>
+  );
+}
+
+// The "raw mass" that becomes a vault — abstract glowing polygon
+function ForgeMass({ progress, matColor, holding }) {
+  const id = useMemo(() => 'fm' + Math.random().toString(36).slice(2, 8), []);
+  // morphing polygon — 9 points that wobble
+  const [phase, setPhase] = useState(0);
+  
+  useEffect(() => {
+    let raf;
+    const tick = () => {
+      setPhase(p => p + 0.02);
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, []);
+  
+  const cx = 120, cy = 120;
+  const wobble = holding ? 18 : 12;
+  // Generate organic blob points
+  const pts = [];
+  const segments = 12;
+  for (let i = 0; i < segments; i++) {
+    const a = (Math.PI * 2 / segments) * i;
+    const wob = Math.sin(phase * 2 + i * 0.7) * wobble + Math.cos(phase * 1.3 + i * 0.4) * (wobble * 0.6);
+    const r = 80 + wob - (progress * 0.2);
+    pts.push([cx + r * Math.cos(a), cy + r * Math.sin(a)]);
+  }
+  
+  // Build smooth path using bezier curves
+  let path = `M ${pts[0][0]} ${pts[0][1]}`;
+  for (let i = 0; i < pts.length; i++) {
+    const cur = pts[i];
+    const next = pts[(i + 1) % pts.length];
+    const mx = (cur[0] + next[0]) / 2;
+    const my = (cur[1] + next[1]) / 2;
+    path += ` Q ${cur[0]} ${cur[1]} ${mx} ${my}`;
+  }
+  path += ' Z';
+  
+  return (
+    <svg width="240" height="240" viewBox="0 0 240 240" style={{ display: 'block' }}>
+      <defs>
+        <radialGradient id={`fmg-${id}`} cx="0.5" cy="0.4" r="0.6">
+          <stop offset="0%" stopColor="#fff" stopOpacity={0.3 + progress * 0.005} />
+          <stop offset="40%" stopColor={matColor} stopOpacity="0.8" />
+          <stop offset="100%" stopColor={matColor} stopOpacity="0.2" />
+        </radialGradient>
+        <filter id={`fmblur-${id}`}>
+          <feGaussianBlur stdDeviation="2" />
+        </filter>
+      </defs>
+      
+      {/* outer glow */}
+      <path d={path} fill={matColor} opacity="0.2" filter={`blur(12px)`} />
+      
+      {/* main mass */}
+      <path d={path} fill={`url(#fmg-${id})`} stroke={matColor} strokeWidth="1.2" opacity="0.95" />
+      
+      {/* highlight crescent */}
+      <ellipse 
+        cx={cx - 20} cy={cy - 20} 
+        rx={45 + progress * 0.3} ry={30 + progress * 0.2} 
+        fill="#fff" opacity={0.15 + progress * 0.002}
+        filter={`blur(${8 - progress * 0.04}px)`}
+      />
+      
+      {/* internal energy lines — appear as progress increases */}
+      {progress > 30 && Array.from({ length: 6 }).map((_, i) => {
+        const a = (Math.PI / 3) * i;
+        const r1 = 40;
+        const r2 = 70;
+        return (
+          <line 
+            key={i}
+            x1={cx + r1 * Math.cos(a)} y1={cy + r1 * Math.sin(a)}
+            x2={cx + r2 * Math.cos(a)} y2={cy + r2 * Math.sin(a)}
+            stroke="#fff"
+            strokeWidth="0.8"
+            opacity={(progress - 30) / 100}
+          />
+        );
+      })}
+      
+      {/* core dot */}
+      <circle cx={cx} cy={cy} r={4 + progress * 0.06} fill="#fff" opacity={0.6 + progress * 0.004} />
+    </svg>
+  );
+}
+
+// Orbital sigils around the forge
+function ForgeSigils({ phase, reveal }) {
+  const sigils = useMemo(() => [
+    { shape: 'hex', size: 16, orbit: 220, speed: 40, delay: 0 },
+    { shape: 'tri', size: 12, orbit: 250, speed: 60, delay: 8 },
+    { shape: 'dot', size: 4, orbit: 280, speed: 30, delay: 4 },
+    { shape: 'hex', size: 10, orbit: 240, speed: 50, delay: 12 },
+    { shape: 'tri', size: 14, orbit: 200, speed: 45, delay: 16 },
+    { shape: 'dot', size: 6, orbit: 270, speed: 35, delay: 20 },
+  ], []);
+  
+  return (
+    <div style={{ position: 'absolute', top: '50%', left: '50%', width: 0, height: 0, pointerEvents: 'none' }}>
+      {sigils.map((s, i) => (
+        <div key={i} style={{
+          position: 'absolute',
+          top: -s.size / 2, left: -s.size / 2,
+          width: s.size,
+          height: s.size,
+          opacity: reveal ? 0.5 : 0,
+          transition: 'opacity 1600ms ease',
+          animation: `forgeSigilOrbit ${s.speed}s linear ${s.delay}s infinite`,
+          '--orbit-r': `${s.orbit}px`,
+        }}>
+          {s.shape === 'hex' && (
+            <svg width={s.size} height={s.size} viewBox="0 0 16 16">
+              <polygon points="8,1 14,4.5 14,11.5 8,15 2,11.5 2,4.5" fill="none" stroke={phase === 'sealed' ? '#6ba3ff' : phase === 'sealing' ? '#9f7aea' : '#fbbf24'} strokeWidth="1" style={{ transition: 'stroke 800ms' }} />
+            </svg>
+          )}
+          {s.shape === 'tri' && (
+            <svg width={s.size} height={s.size} viewBox="0 0 12 12">
+              <polygon points="6,1 11,10 1,10" fill="none" stroke={phase === 'sealed' ? '#6ba3ff' : phase === 'sealing' ? '#9f7aea' : '#fbbf24'} strokeWidth="0.8" style={{ transition: 'stroke 800ms' }} />
+            </svg>
+          )}
+          {s.shape === 'dot' && (
+            <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: phase === 'sealed' ? '#6ba3ff' : phase === 'sealing' ? '#9f7aea' : '#fbbf24', boxShadow: `0 0 8px currentColor`, transition: 'background 800ms' }} />
+          )}
+        </div>
+      ))}
+    </div>
   );
 }
 
