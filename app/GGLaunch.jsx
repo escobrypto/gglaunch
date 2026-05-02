@@ -3048,20 +3048,18 @@ function TapeBurst({ x, y, word }) {
 }
 
 // ============================================================================
-// THE FORGE — interactive vault forging. Click and hold to seal a vault.
+// THE FORGE — pure visual storytelling. The whole product in 7 seconds.
 // ============================================================================
 function TheForge() {
-  const [forgeProgress, setForgeProgress] = useState(0);   // 0 → 100
-  const [phase, setPhase] = useState('raw');                // raw → forging → sealing → sealed → reset
-  const [forgeCount, setForgeCount] = useState(0);
-  const [holding, setHolding] = useState(false);
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-  const [sparks, setSparks] = useState([]);
+  const [phase, setPhase] = useState('appear'); // appear → buying → graduating → sealed → reset
+  const [tokenX, setTokenX] = useState(0);     // 0 → 1 across the frame
+  const [tokenY, setTokenY] = useState(0);     // 0 → 1 (high to low)
+  const [price, setPrice] = useState(0);
+  const [bubbles, setBubbles] = useState([]);
+  const [trail, setTrail] = useState([]);
   const [reveal, setReveal] = useState(false);
-  const containerRef = useRef(null);
   const sectionRef = useRef(null);
-  
-  // Reveal on scroll
+
   useEffect(() => {
     if (!sectionRef.current) return;
     const obs = new IntersectionObserver(
@@ -3071,102 +3069,94 @@ function TheForge() {
     obs.observe(sectionRef.current);
     return () => obs.disconnect();
   }, []);
-  
-  // Track mouse for spark direction
+
+  // The whole loop
   useEffect(() => {
-    const handler = (e) => {
-      if (!containerRef.current) return;
-      const rect = containerRef.current.getBoundingClientRect();
-      const cx = rect.left + rect.width / 2;
-      const cy = rect.top + rect.height / 2;
-      setMousePos({ x: e.clientX - cx, y: e.clientY - cy });
-    };
-    window.addEventListener('mousemove', handler);
-    return () => window.removeEventListener('mousemove', handler);
-  }, []);
-  
-  // Periodic ambient sparks when not interacting
-  useEffect(() => {
-    if (!reveal || phase !== 'raw') return;
-    const id = setInterval(() => {
-      const id = Math.random().toString(36).slice(2);
-      const angle = Math.random() * Math.PI * 2;
-      const speed = 60 + Math.random() * 80;
-      const newSpark = {
-        id,
-        startX: 0, startY: 0,
-        endX: Math.cos(angle) * speed,
-        endY: Math.sin(angle) * speed,
-        color: '#fbbf24',
-      };
-      setSparks(s => [...s.slice(-12), newSpark]);
-      setTimeout(() => setSparks(s => s.filter(sp => sp.id !== id)), 1000);
-    }, 600);
-    return () => clearInterval(id);
-  }, [reveal, phase]);
-  
-  // Forge progress when holding
-  useEffect(() => {
-    if (!holding || phase === 'sealed' || phase === 'sealing') return;
-    setPhase('forging');
-    let raf;
-    const tick = () => {
-      setForgeProgress(p => {
-        const next = Math.min(100, p + 1.5);
-        if (next >= 100) {
-          // trigger sealing
-          setPhase('sealing');
-          setForgeCount(c => c + 1);
-          setTimeout(() => setPhase('sealed'), 1400);
-          setTimeout(() => { setPhase('raw'); setForgeProgress(0); }, 4000);
-          return 100;
+    if (!reveal) return;
+    let cancelled = false;
+    let rafId;
+
+    const loop = async () => {
+      while (!cancelled) {
+        // RESET state
+        setPhase('appear');
+        setTokenX(0);
+        setTokenY(0);
+        setPrice(0);
+        setBubbles([]);
+        setTrail([]);
+        await sleep(1000);
+        if (cancelled) return;
+
+        // PHASE: BUYING — token rises along an arc, bubbles bump it up
+        setPhase('buying');
+        const buyAmounts = [25, 80, 200, 420, 800];
+        const startTime = performance.now();
+        const duration = 3200;
+
+        const animateRise = () => {
+          if (cancelled) return;
+          const elapsed = performance.now() - startTime;
+          const t = Math.min(elapsed / duration, 1);
+          // ease-out curve for organic motion
+          const eased = 1 - Math.pow(1 - t, 2.5);
+          const newX = eased;
+          // Y travels in an arc — starts low, peaks higher
+          const newY = eased;
+          setTokenX(newX);
+          setTokenY(newY);
+          setPrice(Math.floor(eased * 67000));
+          setTrail(prev => {
+            const newPoint = { x: newX, y: newY, age: 0 };
+            const aged = prev.map(p => ({ ...p, age: p.age + 1 })).filter(p => p.age < 60);
+            return [...aged, newPoint];
+          });
+          if (t < 1) rafId = requestAnimationFrame(animateRise);
+        };
+        rafId = requestAnimationFrame(animateRise);
+
+        // Drop buy bubbles every ~500ms during buying phase
+        for (let i = 0; i < buyAmounts.length; i++) {
+          await sleep(500 + i * 50);
+          if (cancelled) return;
+          const bubbleId = Date.now() + Math.random();
+          setBubbles(prev => [...prev, { id: bubbleId, amount: buyAmounts[i] }]);
+          setTimeout(() => setBubbles(prev => prev.filter(b => b.id !== bubbleId)), 1400);
         }
-        raf = requestAnimationFrame(tick);
-        return next;
-      });
+
+        await sleep(700);
+        if (cancelled) return;
+
+        // PHASE: GRADUATING — flash
+        setPhase('graduating');
+        await sleep(1100);
+        if (cancelled) return;
+
+        // PHASE: SEALED — vault breathes for a moment
+        setPhase('sealed');
+        await sleep(2000);
+        if (cancelled) return;
+
+        // PHASE: RESET — fade out, brief pause
+        setPhase('reset');
+        await sleep(700);
+      }
     };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [holding, phase]);
-  
-  // Decay progress when not holding
-  useEffect(() => {
-    if (holding || phase !== 'forging') return;
-    let raf;
-    const tick = () => {
-      setForgeProgress(p => {
-        const next = Math.max(0, p - 1.2);
-        if (next === 0) { setPhase('raw'); return 0; }
-        raf = requestAnimationFrame(tick);
-        return next;
-      });
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [holding, phase]);
-  
-  // Burst sparks on phase change to sealing
-  useEffect(() => {
-    if (phase !== 'sealing') return;
-    const burst = [];
-    for (let i = 0; i < 24; i++) {
-      const a = (Math.PI * 2 / 24) * i;
-      const speed = 120 + Math.random() * 80;
-      burst.push({
-        id: `burst-${Date.now()}-${i}`,
-        startX: 0, startY: 0,
-        endX: Math.cos(a) * speed,
-        endY: Math.sin(a) * speed,
-        color: i % 2 === 0 ? '#9f7aea' : '#6ba3ff',
-      });
-    }
-    setSparks(s => [...s, ...burst]);
-    setTimeout(() => setSparks([]), 1600);
-  }, [phase]);
-  
-  // Phase-driven color
-  const matColor = phase === 'sealed' ? '#6ba3ff' : phase === 'sealing' ? '#9f7aea' : phase === 'forging' ? `hsl(${30 + forgeProgress * 2.8}, 80%, 60%)` : '#fbbf24';
-  const vaultState = phase === 'sealed' ? 'sealed' : phase === 'sealing' ? 'sealing' : 'open';
+
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+    loop();
+    return () => { cancelled = true; cancelAnimationFrame(rafId); };
+  }, [reveal]);
+
+  // Position calculations — token travels in arc from bottom-left to top-right
+  // Frame is 100% wide x 320px tall
+  const startX = 0.08;
+  const endX = 0.85;
+  const startY = 0.78;
+  const endY = 0.18;
+  const curX = startX + (endX - startX) * tokenX;
+  // Y uses ease-in for arc curve illusion
+  const arcY = startY + (endY - startY) * tokenY;
   
   return (
     <section ref={sectionRef} className="gg-section-pad-xl" style={{ 
@@ -3176,508 +3166,230 @@ function TheForge() {
       borderBottom: '1px solid var(--line)',
       overflow: 'hidden',
     }}>
-      {/* atmospheric backdrop — shifts with phase */}
+      {/* atmospheric — phase-shifted */}
       <div style={{
         position: 'absolute',
         inset: 0,
         background: phase === 'sealed' 
-          ? 'radial-gradient(ellipse 1000px 700px at 50% 50%, rgba(107,163,255,0.18) 0%, transparent 60%)'
-          : phase === 'sealing'
-          ? 'radial-gradient(ellipse 1000px 700px at 50% 50%, rgba(159,122,234,0.20) 0%, transparent 60%)'
-          : phase === 'forging'
-          ? `radial-gradient(ellipse 1000px 700px at 50% 50%, rgba(251,191,36,${0.10 + forgeProgress * 0.0015}) 0%, transparent 60%)`
-          : 'radial-gradient(ellipse 1000px 700px at 50% 50%, rgba(251,191,36,0.08) 0%, transparent 60%)',
-        transition: 'background 800ms ease',
+          ? 'radial-gradient(ellipse 1000px 600px at 50% 50%, rgba(107,163,255,0.14) 0%, transparent 60%)'
+          : phase === 'graduating'
+          ? 'radial-gradient(ellipse 1000px 600px at 50% 50%, rgba(159,122,234,0.18) 0%, transparent 60%)'
+          : 'radial-gradient(ellipse 1000px 600px at 50% 50%, rgba(251,191,36,0.10) 0%, transparent 60%)',
+        transition: 'background 1000ms ease',
         pointerEvents: 'none',
       }} />
       
-      <div style={{ maxWidth: 1100, margin: '0 auto', position: 'relative' }}>
-        {/* Eyebrow + heading */}
-        <div style={{ textAlign: 'center', marginBottom: 64, opacity: reveal ? 1 : 0, transform: reveal ? 'translateY(0)' : 'translateY(12px)', transition: 'opacity 1200ms ease, transform 1200ms ease' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 16, marginBottom: 32 }}>
-            <div style={{ width: 32, height: 1, background: `linear-gradient(90deg, transparent, ${matColor})`, transition: 'background 800ms' }} />
-            <span style={{ fontSize: 11, color: matColor, letterSpacing: '0.18em', fontWeight: 600, textTransform: 'uppercase', fontFamily: 'var(--mono)', transition: 'color 800ms' }}>The Forge</span>
-            <div style={{ width: 32, height: 1, background: `linear-gradient(270deg, transparent, ${matColor})`, transition: 'background 800ms' }} />
+      <div style={{ maxWidth: 880, margin: '0 auto', position: 'relative' }}>
+        {/* Header */}
+        <div style={{ textAlign: 'center', marginBottom: 56, opacity: reveal ? 1 : 0, transform: reveal ? 'translateY(0)' : 'translateY(12px)', transition: 'opacity 1200ms ease, transform 1200ms ease' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 16, marginBottom: 28 }}>
+            <div style={{ width: 32, height: 1, background: 'linear-gradient(90deg, transparent, var(--acid))' }} />
+            <span style={{ fontSize: 11, color: 'var(--acid)', letterSpacing: '0.18em', fontWeight: 600, textTransform: 'uppercase', fontFamily: 'var(--mono)' }}>The Loop</span>
+            <div style={{ width: 32, height: 1, background: 'linear-gradient(270deg, transparent, var(--acid))' }} />
           </div>
           
-          <h2 style={{ fontSize: 'clamp(40px, 5.5vw, 72px)', margin: 0, fontWeight: 400, letterSpacing: '-0.035em', lineHeight: 1 }}>
-            <span className="serif" style={{ fontStyle: 'italic', fontWeight: 400, color: 'var(--fg-dim)' }}>You are not watching.</span><br />
-            <span style={{ fontWeight: 500 }}>You are sealing.</span>
+          <h2 style={{ fontSize: 'clamp(36px, 5vw, 64px)', margin: 0, fontWeight: 400, letterSpacing: '-0.035em', lineHeight: 1.05 }}>
+            <span className="serif" style={{ fontStyle: 'italic', fontWeight: 400, color: 'var(--fg-dim)' }}>This is GGLaunch.</span><br />
+            <span style={{ fontWeight: 500 }}>The whole thing.</span>
           </h2>
-          
-          <p style={{ marginTop: 24, fontSize: 16, color: 'var(--fg-dim)', maxWidth: 540, margin: '24px auto 0', lineHeight: 1.55 }}>
-            Press and hold the vault. When it fills, it seals. When it seals, it stays sealed. <span style={{ color: 'var(--fg)' }}>Forever.</span>
-          </p>
         </div>
         
-        {/* THE FORGE — interactive composition */}
-        <div ref={containerRef} style={{ 
-          position: 'relative', 
-          height: 520,
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center',
+        {/* The visual frame */}
+        <div style={{ 
+          position: 'relative',
+          height: 380,
+          maxWidth: 760,
+          margin: '0 auto',
           opacity: reveal ? 1 : 0,
-          transition: 'opacity 1600ms ease 200ms',
+          transition: 'opacity 1400ms ease 200ms',
         }}>
-          {/* Orbiting sigils */}
-          <ForgeSigils phase={phase} reveal={reveal} />
+          {/* Faint grid backdrop */}
+          <svg viewBox="0 0 760 380" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.5 }}>
+            <defs>
+              <linearGradient id="forge-bg-grad" x1="0" y1="1" x2="1" y2="0">
+                <stop offset="0%" stopColor="var(--line)" stopOpacity="0.4" />
+                <stop offset="100%" stopColor="var(--line)" stopOpacity="0.1" />
+              </linearGradient>
+            </defs>
+            {/* Faint grid lines suggesting axes */}
+            {[0.25, 0.5, 0.75].map(t => (
+              <g key={t}>
+                <line x1="0" y1={380 * t} x2="760" y2={380 * t} stroke="var(--line)" strokeWidth="0.4" strokeDasharray="2 8" opacity="0.4" />
+                <line x1={760 * t} y1="0" x2={760 * t} y2="380" stroke="var(--line)" strokeWidth="0.4" strokeDasharray="2 8" opacity="0.4" />
+              </g>
+            ))}
+          </svg>
           
-          {/* Sparks */}
-          {sparks.map(spark => (
-            <div key={spark.id} style={{
+          {/* Trail — the path the token has traveled */}
+          {phase !== 'reset' && trail.length > 1 && (
+            <svg viewBox="0 0 760 380" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}>
+              <defs>
+                <linearGradient id="forge-trail-grad" x1="0" y1="1" x2="1" y2="0">
+                  <stop offset="0%" stopColor="#fbbf24" stopOpacity="0" />
+                  <stop offset="50%" stopColor="#fbbf24" stopOpacity="0.6" />
+                  <stop offset="100%" stopColor="#9f7aea" stopOpacity="0.9" />
+                </linearGradient>
+              </defs>
+              <path
+                d={`M ${trail.map((p, i) => {
+                  const tx = (startX + (endX - startX) * p.x) * 760;
+                  const ty = (startY + (endY - startY) * p.y) * 380;
+                  return `${i === 0 ? '' : 'L'} ${tx.toFixed(1)} ${ty.toFixed(1)}`;
+                }).join(' ')}`}
+                fill="none"
+                stroke="url(#forge-trail-grad)"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                opacity="0.8"
+              />
+            </svg>
+          )}
+          
+          {/* Buy bubbles — float up from the bottom */}
+          {bubbles.map(b => (
+            <div key={b.id} style={{
               position: 'absolute',
-              top: '50%', left: '50%',
-              width: 3, height: 3,
-              borderRadius: '50%',
-              background: spark.color,
-              boxShadow: `0 0 8px ${spark.color}, 0 0 16px ${spark.color}`,
-              transform: `translate(${spark.startX}px, ${spark.startY}px)`,
-              animation: 'forgeSpark 1s cubic-bezier(0.2, 0.6, 0.4, 1) forwards',
-              '--end-x': `${spark.endX}px`,
-              '--end-y': `${spark.endY}px`,
+              left: `${(curX * 100) - 6}%`,
+              bottom: 16,
+              padding: '6px 12px',
+              background: 'rgba(74,222,128,0.12)',
+              border: '1px solid rgba(74,222,128,0.4)',
+              color: 'var(--green)',
+              fontSize: 13,
+              fontFamily: 'var(--mono)',
+              fontWeight: 600,
+              letterSpacing: '-0.01em',
+              animation: 'forgeBubbleRise 1.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards',
               pointerEvents: 'none',
-              zIndex: 5,
-            }} />
+              zIndex: 3,
+            }}>
+              +${b.amount}
+            </div>
           ))}
           
-          {/* Halo glow behind forge */}
-          <div style={{
-            position: 'absolute',
-            width: 360,
-            height: 360,
-            borderRadius: '50%',
-            background: `radial-gradient(circle, ${matColor}33 0%, ${matColor}11 30%, transparent 60%)`,
-            filter: 'blur(32px)',
-            transition: 'background 800ms',
-            pointerEvents: 'none',
-          }} />
-          
-          {/* Sealing flash overlay */}
-          {phase === 'sealing' && (
+          {/* Graduating flash */}
+          {phase === 'graduating' && (
             <div style={{
               position: 'absolute',
-              width: 400, height: 400,
+              left: `${endX * 100}%`,
+              top: `${endY * 100}%`,
+              width: 200, height: 200,
+              marginLeft: -100, marginTop: -100,
               borderRadius: '50%',
-              background: `radial-gradient(circle, #fff 0%, ${matColor}88 30%, transparent 60%)`,
-              animation: 'forgeSealFlash 1400ms ease-out 1',
+              background: 'radial-gradient(circle, #fff 0%, rgba(159,122,234,0.6) 30%, transparent 70%)',
+              animation: 'forgeGradFlash 1100ms ease-out forwards',
               pointerEvents: 'none',
               mixBlendMode: 'screen',
               zIndex: 4,
             }} />
           )}
           
-          {/* The forge mass / vault */}
-          <button
-            onMouseDown={() => setHolding(true)}
-            onMouseUp={() => setHolding(false)}
-            onMouseLeave={() => setHolding(false)}
-            onTouchStart={(e) => { e.preventDefault(); setHolding(true); }}
-            onTouchEnd={() => setHolding(false)}
-            style={{
-              position: 'relative',
-              background: 'transparent',
-              border: 'none',
-              cursor: phase === 'sealed' ? 'default' : 'pointer',
-              padding: 0,
-              outline: 'none',
-              transform: holding ? 'scale(0.97)' : 'scale(1)',
-              transition: 'transform 200ms cubic-bezier(0.2, 0.8, 0.2, 1)',
-              zIndex: 3,
-            }}
-          >
-            {phase === 'raw' || phase === 'forging' ? (
-              <ForgeMass progress={forgeProgress} matColor={matColor} holding={holding} />
-            ) : (
-              <Vault size={240} state={vaultState} fillPct={100} animate={true} breathe={phase === 'sealed'} scanline={true} flash={phase === 'sealing'} />
-            )}
-          </button>
+          {/* The token / vault — moves along the arc */}
+          {phase !== 'reset' && (
+            <div style={{
+              position: 'absolute',
+              left: phase === 'sealed' || phase === 'graduating' ? `${endX * 100}%` : `${curX * 100}%`,
+              top: phase === 'sealed' || phase === 'graduating' ? `${endY * 100}%` : `${arcY * 100}%`,
+              transform: 'translate(-50%, -50%)',
+              transition: phase === 'sealed' ? 'all 800ms cubic-bezier(0.2, 0.8, 0.2, 1)' : 'none',
+              zIndex: 5,
+            }}>
+              {phase === 'sealed' ? (
+                <div style={{ animation: 'forgeVaultIn 600ms cubic-bezier(0.2, 0.8, 0.2, 1)' }}>
+                  <Vault size={80} state="sealed" fillPct={100} animate={true} breathe={true} />
+                </div>
+              ) : (
+                <div style={{ 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  alignItems: 'center',
+                  gap: 6,
+                  animation: phase === 'appear' ? 'forgeTokenAppear 1000ms cubic-bezier(0.2, 0.8, 0.2, 1)' : 'none',
+                }}>
+                  {/* Token bubble */}
+                  <div className="gg-token-thumb" style={{ 
+                    width: 52, 
+                    height: 52, 
+                    fontSize: 28,
+                    boxShadow: phase === 'buying' ? '0 0 24px rgba(251,191,36,0.4), 0 0 40px rgba(251,191,36,0.2)' : '0 0 16px rgba(251,191,36,0.2)',
+                    transition: 'box-shadow 600ms',
+                  }}>🐕</div>
+                  {/* Price label */}
+                  <div style={{ 
+                    fontSize: 11, 
+                    fontFamily: 'var(--mono)', 
+                    color: 'var(--fg)', 
+                    fontWeight: 600,
+                    background: 'rgba(11,15,28,0.85)',
+                    border: '1px solid var(--line-2)',
+                    padding: '3px 8px',
+                    whiteSpace: 'nowrap',
+                  }}>
+                    BANANA · ${(price / 1000).toFixed(1)}K
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
           
-          {/* Progress indicator below */}
-          <div style={{
-            position: 'absolute',
-            bottom: 40,
-            left: '50%',
-            transform: 'translateX(-50%)',
-            textAlign: 'center',
-            zIndex: 3,
-            minWidth: 320,
-          }}>
-            {/* Progress bar */}
-            <div style={{ 
-              width: 280, 
-              height: 2, 
-              background: 'var(--line-2)', 
-              margin: '0 auto 12px',
-              position: 'relative',
-              overflow: 'hidden',
-            }}>
-              <div style={{
-                position: 'absolute',
-                inset: 0,
-                width: `${forgeProgress}%`,
-                background: phase === 'sealed' ? 'var(--acid)' : phase === 'sealing' ? 'var(--purple)' : `linear-gradient(90deg, var(--amber), ${matColor})`,
-                boxShadow: `0 0 8px ${matColor}`,
-                transition: phase === 'sealed' ? 'all 600ms ease' : 'background 200ms',
-              }} />
-            </div>
-            
-            <div key={phase} style={{
-              fontSize: 12,
-              color: matColor,
-              fontFamily: 'var(--mono)',
-              fontWeight: 600,
-              letterSpacing: '0.08em',
-              textTransform: 'uppercase',
-              transition: 'color 800ms',
-              animation: 'fadeIn 400ms ease',
-            }}>
-              {phase === 'raw' && 'Hold to forge'}
-              {phase === 'forging' && `Forging · ${Math.floor(forgeProgress)}%`}
-              {phase === 'sealing' && 'Sealing vault…'}
-              {phase === 'sealed' && '✓ Vault sealed forever'}
-            </div>
+          {/* Bottom-corner labels suggesting axes */}
+          <div style={{ position: 'absolute', bottom: 8, left: 12, fontSize: 10, color: 'var(--fg-mute)', letterSpacing: '0.06em', fontFamily: 'var(--mono)', textTransform: 'uppercase', fontWeight: 600 }}>
+            launch
+          </div>
+          <div style={{ position: 'absolute', top: 8, right: 12, fontSize: 10, color: 'var(--fg-mute)', letterSpacing: '0.06em', fontFamily: 'var(--mono)', textTransform: 'uppercase', fontWeight: 600 }}>
+            graduation
           </div>
         </div>
         
-        {/* Bottom row — counter + caption */}
+        {/* The captions — sync with phase */}
         <div style={{ 
-          marginTop: 48, 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center',
-          gap: 16,
-          flexWrap: 'wrap',
+          textAlign: 'center', 
+          marginTop: 56, 
+          minHeight: 80,
           opacity: reveal ? 1 : 0,
           transition: 'opacity 1200ms ease 600ms',
         }}>
-          <div style={{ 
-            display: 'inline-flex', 
-            alignItems: 'center', 
-            gap: 12,
-            padding: '10px 18px', 
-            border: '1px solid var(--line-2)', 
-            background: 'rgba(11,15,28,0.6)',
-            boxShadow: 'var(--hairline-top)',
-          }}>
-            <span style={{ fontSize: 11, color: 'var(--fg-mute)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>Forged this session</span>
-            <span style={{ fontSize: 18, fontFamily: 'var(--mono)', fontWeight: 500, color: forgeCount > 0 ? 'var(--acid)' : 'var(--fg-dim)', minWidth: 24, textAlign: 'right' }}>
-              {String(forgeCount).padStart(2, '0')}
-            </span>
+          <div 
+            key={phase}
+            style={{ 
+              fontSize: 'clamp(20px, 2.4vw, 28px)', 
+              fontWeight: 500, 
+              letterSpacing: '-0.015em',
+              color: 'var(--fg)',
+              animation: 'fadeIn 700ms ease',
+              marginBottom: 8,
+            }}
+          >
+            {phase === 'appear' && <><span className="serif" style={{ fontStyle: 'italic', color: 'var(--fg-dim)' }}>Anyone makes</span> a coin.</>}
+            {phase === 'buying' && <><span className="serif" style={{ fontStyle: 'italic', color: 'var(--fg-dim)' }}>People</span> buy it.</>}
+            {phase === 'graduating' && <><span className="serif" style={{ fontStyle: 'italic', color: 'var(--fg-dim)' }}>It</span> graduates.</>}
+            {phase === 'sealed' && <span style={{ background: 'linear-gradient(120deg, var(--purple-l) 0%, var(--acid) 60%, var(--steel) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>It locks. Forever.</span>}
+            {phase === 'reset' && <span style={{ opacity: 0 }}>·</span>}
           </div>
-          
-          {forgeCount > 0 && (
-            <div className="serif" style={{ 
-              fontSize: 16, 
-              color: 'var(--fg-dim)', 
-              fontStyle: 'italic',
-              animation: 'fadeIn 600ms ease',
-            }}>
-              {forgeCount === 1 ? 'You sealed one.' : forgeCount < 5 ? 'You\'re getting it.' : 'You understand now.'}
-            </div>
-          )}
         </div>
       </div>
       
       <style>{`
-        @keyframes forgeSpark {
-          0% { transform: translate(0, 0) scale(1); opacity: 1; }
-          100% { transform: translate(var(--end-x), var(--end-y)) scale(0); opacity: 0; }
+        @keyframes forgeTokenAppear {
+          0% { opacity: 0; transform: translateY(20px) scale(0.6); }
+          100% { opacity: 1; transform: translateY(0) scale(1); }
         }
-        @keyframes forgeSealFlash {
-          0% { opacity: 0; transform: scale(0.5); }
+        @keyframes forgeBubbleRise {
+          0% { transform: translateY(20px); opacity: 0; }
+          20% { opacity: 1; }
+          100% { transform: translateY(-90px); opacity: 0; }
+        }
+        @keyframes forgeGradFlash {
+          0% { opacity: 0; transform: scale(0.4); }
           30% { opacity: 1; transform: scale(1); }
-          100% { opacity: 0; transform: scale(1.8); }
+          100% { opacity: 0; transform: scale(2); }
         }
-        @keyframes forgeSigilFloat {
-          0%, 100% { transform: translateY(0) rotate(0deg); }
-          50% { transform: translateY(-12px) rotate(180deg); }
-        }
-        @keyframes forgeSigilOrbit {
-          from { transform: rotate(0deg) translateX(var(--orbit-r)) rotate(0deg); }
-          to { transform: rotate(360deg) translateX(var(--orbit-r)) rotate(-360deg); }
+        @keyframes forgeVaultIn {
+          0% { opacity: 0; transform: scale(0.6); }
+          100% { opacity: 1; transform: scale(1); }
         }
       `}</style>
     </section>
-  );
-}
-
-// The "raw mass" that becomes a vault — abstract glowing polygon
-function ForgeMass({ progress, matColor, holding }) {
-  const id = useMemo(() => 'fm' + Math.random().toString(36).slice(2, 8), []);
-  const [phase, setPhase] = useState(0);
-  
-  useEffect(() => {
-    let raf;
-    const tick = () => {
-      setPhase(p => p + 0.025);
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, []);
-  
-  const cx = 120, cy = 120;
-  const baseR = 88;
-  
-  // Roughness inversely proportional to progress: chaotic raw → clean hex at 100%
-  // 0% progress: heavy chaos (roughness ~14)
-  // 100% progress: zero roughness (perfect hex)
-  const roughness = (1 - progress / 100) * 14 + (holding ? 2 : 0);
-  
-  // Heat shimmer also scales — most intense when raw, calms as it forges
-  const heatAmp = (1 - progress / 100) * 6;
-  
-  // Build the hex with rough edges. 6 vertices, but each edge has subdivisions
-  // that wobble outward to create the rough/jagged "uncut metal" look.
-  const buildPath = () => {
-    const subdivisions = 8; // points per edge
-    const allPts = [];
-    
-    for (let v = 0; v < 6; v++) {
-      const a1 = (Math.PI / 3) * v - Math.PI / 2;
-      const a2 = (Math.PI / 3) * (v + 1) - Math.PI / 2;
-      
-      const v1x = cx + baseR * Math.cos(a1);
-      const v1y = cy + baseR * Math.sin(a1);
-      const v2x = cx + baseR * Math.cos(a2);
-      const v2y = cy + baseR * Math.sin(a2);
-      
-      // The vertex itself — slight wobble even at the corner
-      const cornerRough = roughness * 0.4;
-      const cornerWob = Math.sin(phase * 1.8 + v * 1.3) * cornerRough;
-      allPts.push([
-        v1x + Math.cos(a1) * cornerWob,
-        v1y + Math.sin(a1) * cornerWob
-      ]);
-      
-      // Subdivision points along the edge — these are where the roughness lives
-      for (let s = 1; s < subdivisions; s++) {
-        const t = s / subdivisions;
-        const baseEx = v1x + (v2x - v1x) * t;
-        const baseEy = v1y + (v2y - v1y) * t;
-        
-        // Outward normal direction (perpendicular to edge, pointing away from center)
-        const edgeDx = v2x - v1x;
-        const edgeDy = v2y - v1y;
-        const len = Math.hypot(edgeDx, edgeDy);
-        const nx = -edgeDy / len;
-        const ny = edgeDx / len;
-        
-        // Two layers of noise — slow base wobble + fast detail
-        const noise1 = Math.sin(phase * 1.5 + v * 2.1 + s * 0.9) * roughness;
-        const noise2 = Math.cos(phase * 3.2 + v * 1.7 + s * 1.4) * (roughness * 0.5);
-        const noise = noise1 + noise2;
-        
-        // Bias outward (positive normal direction) so it looks like extra material, not gaps
-        const offset = noise * 0.6 + Math.abs(noise) * 0.4;
-        
-        allPts.push([
-          baseEx + nx * offset,
-          baseEy + ny * offset
-        ]);
-      }
-    }
-    
-    let path = `M ${allPts[0][0].toFixed(2)} ${allPts[0][1].toFixed(2)}`;
-    for (let i = 1; i < allPts.length; i++) {
-      path += ` L ${allPts[i][0].toFixed(2)} ${allPts[i][1].toFixed(2)}`;
-    }
-    return path + ' Z';
-  };
-  
-  const path = buildPath();
-  
-  // Color logic: raw is hot orange, transitions to amber, to purple-ish, to acid as progress fills
-  // matColor handles the broad shift, but interior should still feel "molten" early on
-  
-  // Heat distortion overlays — visible when raw, fade as it forges
-  const heatLines = [];
-  if (progress < 80 && heatAmp > 0.5) {
-    for (let i = 0; i < 5; i++) {
-      const y = cy - 40 + i * 20;
-      const offset = Math.sin(phase * 2 + i * 1.5) * heatAmp;
-      heatLines.push({ y, offset, opacity: (1 - progress / 100) * 0.25 });
-    }
-  }
-  
-  return (
-    <svg width="240" height="240" viewBox="0 0 240 240" style={{ display: 'block', overflow: 'visible' }}>
-      <defs>
-        {/* Molten gradient — hot center, cooler edges */}
-        <radialGradient id={`fmg-${id}`} cx="0.5" cy="0.55" r="0.55">
-          <stop offset="0%" stopColor="#fff7e0" stopOpacity={0.6 + progress * 0.003} />
-          <stop offset="20%" stopColor={progress < 50 ? '#ffa84a' : matColor} stopOpacity="0.85" />
-          <stop offset="60%" stopColor={matColor} stopOpacity="0.65" />
-          <stop offset="100%" stopColor={matColor} stopOpacity="0.15" />
-        </radialGradient>
-        
-        {/* Glow gradient for outer halo */}
-        <radialGradient id={`fmgg-${id}`} cx="0.5" cy="0.5" r="0.5">
-          <stop offset="0%" stopColor={matColor} stopOpacity="0.4" />
-          <stop offset="100%" stopColor={matColor} stopOpacity="0" />
-        </radialGradient>
-      </defs>
-      
-      {/* ambient outer glow — pulses brighter as forging progresses */}
-      <circle cx={cx} cy={cy} r={baseR + 30} fill={`url(#fmgg-${id})`} opacity={0.3 + progress * 0.005} />
-      
-      {/* outer glow — soft halo around the rough hex */}
-      <path d={path} fill={matColor} opacity={0.25} style={{ filter: 'blur(14px)' }} />
-      
-      {/* secondary closer glow */}
-      <path d={path} fill={matColor} opacity={0.4} style={{ filter: 'blur(4px)' }} />
-      
-      {/* main rough hex mass */}
-      <path 
-        d={path} 
-        fill={`url(#fmg-${id})`} 
-        stroke={matColor} 
-        strokeWidth={1 + progress * 0.012}
-        strokeOpacity={0.7 + progress * 0.003}
-      />
-      
-      {/* Surface texture — small dark cracks/lines on the rough surface */}
-      {progress < 70 && Array.from({ length: 4 }).map((_, i) => {
-        const a = (Math.PI / 2) * i + phase * 0.3;
-        const r1 = baseR * 0.35;
-        const r2 = baseR * 0.7;
-        return (
-          <line
-            key={`crack-${i}`}
-            x1={cx + r1 * Math.cos(a)}
-            y1={cy + r1 * Math.sin(a)}
-            x2={cx + r2 * Math.cos(a)}
-            y2={cy + r2 * Math.sin(a)}
-            stroke="#000"
-            strokeWidth="0.6"
-            opacity={(1 - progress / 100) * 0.3}
-          />
-        );
-      })}
-      
-      {/* Molten interior glow — bright core that intensifies during forging */}
-      <ellipse 
-        cx={cx} 
-        cy={cy + 8} 
-        rx={baseR * 0.55 + Math.sin(phase * 2) * 4} 
-        ry={baseR * 0.4 + Math.cos(phase * 1.5) * 3} 
-        fill="#fff" 
-        opacity={0.12 + progress * 0.004}
-        style={{ filter: `blur(${10 - progress * 0.06}px)` }}
-      />
-      
-      {/* Specular highlight — top-left, like light catching a curved surface */}
-      <ellipse 
-        cx={cx - 18} cy={cy - 22} 
-        rx={32} ry={18}
-        fill="#fff" 
-        opacity={0.18 + progress * 0.003}
-        style={{ filter: `blur(${6 - progress * 0.04}px)` }}
-        transform={`rotate(-20 ${cx - 18} ${cy - 22})`}
-      />
-      
-      {/* Heat shimmer lines — only visible when raw/early forging */}
-      {heatLines.map((h, i) => (
-        <line
-          key={`heat-${i}`}
-          x1={cx - baseR * 0.7 + h.offset}
-          y1={h.y}
-          x2={cx + baseR * 0.7 - h.offset}
-          y2={h.y}
-          stroke={matColor}
-          strokeWidth="0.4"
-          opacity={h.opacity}
-          style={{ filter: 'blur(1px)' }}
-        />
-      ))}
-      
-      {/* Inner geometry begins to assert itself past 50% — faint inner hex outline */}
-      {progress > 50 && (() => {
-        const innerPts = [];
-        for (let v = 0; v < 6; v++) {
-          const a = (Math.PI / 3) * v - Math.PI / 2;
-          innerPts.push(`${cx + baseR * 0.7 * Math.cos(a)},${cy + baseR * 0.7 * Math.sin(a)}`);
-        }
-        return (
-          <polygon 
-            points={innerPts.join(' ')} 
-            fill="none" 
-            stroke="#fff" 
-            strokeWidth="0.6"
-            opacity={(progress - 50) / 80}
-          />
-        );
-      })()}
-      
-      {/* Energy radials past 70% — start to look like the finished vault's crystalline structure */}
-      {progress > 70 && Array.from({ length: 6 }).map((_, i) => {
-        const a = (Math.PI / 3) * i;
-        const r1 = 28;
-        const r2 = 60;
-        return (
-          <line 
-            key={`radial-${i}`}
-            x1={cx + r1 * Math.cos(a)} y1={cy + r1 * Math.sin(a)}
-            x2={cx + r2 * Math.cos(a)} y2={cy + r2 * Math.sin(a)}
-            stroke="#fff"
-            strokeWidth="0.7"
-            opacity={(progress - 70) / 60}
-          />
-        );
-      })}
-      
-      {/* Center core — emerges as forging completes */}
-      <circle 
-        cx={cx} cy={cy} 
-        r={3 + progress * 0.04} 
-        fill="#fff" 
-        opacity={0.5 + progress * 0.005}
-      />
-    </svg>
-  );
-}
-
-// Orbital sigils around the forge
-function ForgeSigils({ phase, reveal }) {
-  const sigils = useMemo(() => [
-    { shape: 'hex', size: 16, orbit: 220, speed: 40, delay: 0 },
-    { shape: 'tri', size: 12, orbit: 250, speed: 60, delay: 8 },
-    { shape: 'dot', size: 4, orbit: 280, speed: 30, delay: 4 },
-    { shape: 'hex', size: 10, orbit: 240, speed: 50, delay: 12 },
-    { shape: 'tri', size: 14, orbit: 200, speed: 45, delay: 16 },
-    { shape: 'dot', size: 6, orbit: 270, speed: 35, delay: 20 },
-  ], []);
-  
-  return (
-    <div style={{ position: 'absolute', top: '50%', left: '50%', width: 0, height: 0, pointerEvents: 'none' }}>
-      {sigils.map((s, i) => (
-        <div key={i} style={{
-          position: 'absolute',
-          top: -s.size / 2, left: -s.size / 2,
-          width: s.size,
-          height: s.size,
-          opacity: reveal ? 0.5 : 0,
-          transition: 'opacity 1600ms ease',
-          animation: `forgeSigilOrbit ${s.speed}s linear ${s.delay}s infinite`,
-          '--orbit-r': `${s.orbit}px`,
-        }}>
-          {s.shape === 'hex' && (
-            <svg width={s.size} height={s.size} viewBox="0 0 16 16">
-              <polygon points="8,1 14,4.5 14,11.5 8,15 2,11.5 2,4.5" fill="none" stroke={phase === 'sealed' ? '#6ba3ff' : phase === 'sealing' ? '#9f7aea' : '#fbbf24'} strokeWidth="1" style={{ transition: 'stroke 800ms' }} />
-            </svg>
-          )}
-          {s.shape === 'tri' && (
-            <svg width={s.size} height={s.size} viewBox="0 0 12 12">
-              <polygon points="6,1 11,10 1,10" fill="none" stroke={phase === 'sealed' ? '#6ba3ff' : phase === 'sealing' ? '#9f7aea' : '#fbbf24'} strokeWidth="0.8" style={{ transition: 'stroke 800ms' }} />
-            </svg>
-          )}
-          {s.shape === 'dot' && (
-            <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: phase === 'sealed' ? '#6ba3ff' : phase === 'sealing' ? '#9f7aea' : '#fbbf24', boxShadow: `0 0 8px currentColor`, transition: 'background 800ms' }} />
-          )}
-        </div>
-      ))}
-    </div>
   );
 }
 
