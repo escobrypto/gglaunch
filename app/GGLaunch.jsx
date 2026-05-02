@@ -832,6 +832,214 @@ function Styles() {
       input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; background: var(--acid); cursor: pointer; }
       
       a { color: inherit; text-decoration: none; }
+      
+      /* ============================================================== */
+      /* RESPONSIVE — mobile-first overrides                            */
+      /* ============================================================== */
+      
+      /* Tablet — 768px and below */
+      @media (max-width: 900px) {
+        .gg-resp-hero {
+          grid-template-columns: 1fr !important;
+          padding: 32px 20px 0 !important;
+          min-height: auto !important;
+          gap: 32px !important;
+        }
+        .gg-resp-hero h1 {
+          font-size: clamp(40px, 9vw, 64px) !important;
+        }
+        .gg-resp-hero-vault-wrap {
+          height: 480px !important;
+          order: -1 !important;
+        }
+        .gg-resp-stats-4 {
+          grid-template-columns: repeat(2, 1fr) !important;
+          max-width: 100% !important;
+        }
+        .gg-resp-mechanism-grid {
+          grid-template-columns: 1fr !important;
+          gap: 32px !important;
+          margin-bottom: 48px !important;
+        }
+        .gg-resp-mechanism-flow {
+          grid-template-columns: 1fr !important;
+        }
+        .gg-resp-mechanism-flow > * {
+          padding: 0 0 24px !important;
+          text-align: left !important;
+          display: grid !important;
+          grid-template-columns: 100px 1fr !important;
+          gap: 20px !important;
+          align-items: start !important;
+        }
+        .gg-resp-mechanism-flow > * > div:first-child {
+          height: auto !important;
+          margin-bottom: 0 !important;
+        }
+        .gg-resp-mechanism-flow > * > div:nth-child(2) {
+          grid-column: 1 !important;
+        }
+        .gg-resp-comparison {
+          grid-template-columns: 1fr !important;
+        }
+        .gg-resp-comparison > * {
+          border-right: none !important;
+          border-bottom: 1px solid var(--line-2) !important;
+        }
+        .gg-resp-comparison > *:last-child {
+          border-bottom: none !important;
+        }
+        .gg-resp-token-grid {
+          grid-template-columns: 1fr !important;
+          gap: 16px !important;
+        }
+        .gg-resp-token-detail {
+          grid-template-columns: 1fr !important;
+          gap: 16px !important;
+        }
+        .gg-resp-token-detail > * {
+          position: static !important;
+        }
+        .gg-resp-inspector {
+          grid-template-columns: 1fr !important;
+        }
+        .gg-resp-inspector > div:first-child {
+          border-right: none !important;
+          border-bottom: 1px solid var(--line) !important;
+          min-height: 280px !important;
+        }
+        .gg-resp-stake-position {
+          grid-template-columns: 1fr !important;
+        }
+        .gg-resp-stake-position > div:first-child {
+          border-right: none !important;
+          border-bottom: 1px solid var(--line) !important;
+        }
+        .gg-resp-stake-metrics {
+          grid-template-columns: repeat(2, 1fr) !important;
+          gap: 16px !important;
+        }
+        .gg-resp-stake-actions {
+          flex-direction: row !important;
+          border-left: none !important;
+          border-top: 1px solid var(--line) !important;
+        }
+        .gg-resp-stake-actions > * {
+          border-bottom: none !important;
+          border-right: 1px solid var(--line) !important;
+        }
+        .gg-resp-stake-actions > *:last-child {
+          border-right: none !important;
+        }
+        .gg-resp-docs {
+          grid-template-columns: 1fr !important;
+          gap: 24px !important;
+        }
+        .gg-resp-docs-toc {
+          position: static !important;
+          padding: 16px !important;
+          border: 1px solid var(--line-2) !important;
+          background: var(--bg-1) !important;
+        }
+        .gg-resp-discover-table-row,
+        .gg-resp-discover-table-head {
+          display: grid !important;
+          grid-template-columns: 36px 1fr auto !important;
+          gap: 12px !important;
+          padding: 14px 16px !important;
+          align-items: center !important;
+        }
+        .gg-resp-discover-hide-mobile { display: none !important; }
+        .gg-resp-discover-mobile-block {
+          display: block !important;
+          font-size: 12px !important;
+          color: var(--fg-dim) !important;
+          margin-top: 4px !important;
+          font-family: var(--mono) !important;
+        }
+        .gg-resp-graduating-strip {
+          grid-template-columns: repeat(5, 240px) !important;
+          overflow-x: auto !important;
+          padding-bottom: 8px !important;
+          scrollbar-width: none !important;
+        }
+        .gg-resp-graduating-strip::-webkit-scrollbar { display: none; }
+        .gg-resp-flow-line {
+          display: none !important;
+        }
+        .gg-resp-flow-pulse {
+          display: none !important;
+        }
+        .gg-nav-search-hint {
+          display: none !important;
+        }
+        .gg-nav-wallet-balance {
+          display: none !important;
+        }
+        .gg-nav-mobile-menu-btn {
+          display: flex !important;
+        }
+        .gg-nav-desktop-links {
+          display: none !important;
+        }
+        .gg-pip-vault {
+          bottom: 16px !important;
+          right: 16px !important;
+        }
+        .gg-pip-vault > * {
+          padding: 10px !important;
+          gap: 10px !important;
+          min-width: 0 !important;
+        }
+        .gg-pip-vault svg { width: 36px !important; height: 39px !important; }
+        .gg-comparison-vault-wrap {
+          height: 160px !important;
+          margin-bottom: 24px !important;
+          padding-bottom: 24px !important;
+        }
+        .gg-section-pad-lg { padding: 80px 20px !important; }
+        .gg-section-pad-xl { padding: 120px 20px !important; }
+        .gg-page-pad { padding: 32px 20px 80px !important; }
+        .gg-token-header { gap: 16px !important; }
+        .gg-token-header > div:first-child { gap: 16px !important; }
+        .gg-tilt-disable {
+          transform: none !important;
+        }
+        .gg-btn { min-height: 44px; }
+        .gg-magnetic::after { display: none !important; }
+      }
+      
+      /* Phone — 480px and below */
+      @media (max-width: 480px) {
+        .gg-resp-hero h1 {
+          font-size: clamp(36px, 11vw, 52px) !important;
+        }
+        .gg-resp-hero-vault-wrap {
+          height: 380px !important;
+        }
+        .gg-resp-hero-vault-wrap > * {
+          transform: scale(0.7);
+          transform-origin: center center;
+        }
+        .gg-resp-stats-4 {
+          grid-template-columns: 1fr 1fr !important;
+        }
+        .gg-resp-stats-4 > * {
+          padding: 16px 14px !important;
+        }
+        .gg-resp-stats-4 > * .num {
+          font-size: 18px !important;
+        }
+        .gg-resp-graduating-strip {
+          grid-template-columns: repeat(5, 200px) !important;
+        }
+        .gg-resp-stake-metrics {
+          grid-template-columns: 1fr 1fr !important;
+        }
+        .gg-resp-orbital-readout-hide-mobile {
+          display: none !important;
+        }
+      }
     `}</style>
   );
 }
@@ -848,8 +1056,15 @@ function Nav({ page, navigate, walletConnected, connectWallet, walletAddr, solBa
     { id: 'docs', label: 'Docs' },
   ];
   const [hoveredNav, setHoveredNav] = useState(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  
+  const handleNavigate = (id) => {
+    navigate(id);
+    setMobileMenuOpen(false);
+  };
   
   return (
+    <>
     <nav style={{ 
       position: 'fixed', top: 0, left: 0, right: 0, height: 64, 
       background: 'rgba(6,8,15,0.65)', 
@@ -859,12 +1074,12 @@ function Nav({ page, navigate, walletConnected, connectWallet, walletAddr, solBa
       zIndex: 50,
       boxShadow: '0 1px 0 rgba(255,255,255,0.04) inset, 0 4px 24px -8px rgba(0,0,0,0.4)',
     }}>
-      <div style={{ maxWidth: 1400, margin: '0 auto', height: '100%', display: 'flex', alignItems: 'center', padding: '0 24px', gap: 32 }}>
+      <div style={{ maxWidth: 1400, margin: '0 auto', height: '100%', display: 'flex', alignItems: 'center', padding: '0 20px', gap: 32 }}>
         <button onClick={() => navigate('home')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, transition: 'opacity 200ms' }} onMouseEnter={e => e.currentTarget.style.opacity = '0.8'} onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
           <Logo size={24} />
         </button>
         
-        <div style={{ display: 'flex', gap: 0, marginLeft: 24, position: 'relative' }} onMouseLeave={() => setHoveredNav(null)}>
+        <div className="gg-nav-desktop-links" style={{ display: 'flex', gap: 0, marginLeft: 24, position: 'relative' }} onMouseLeave={() => setHoveredNav(null)}>
           {items.map(it => {
             const active = page === it.id;
             const hovered = hoveredNav === it.id;
@@ -911,9 +1126,9 @@ function Nav({ page, navigate, walletConnected, connectWallet, walletAddr, solBa
           })}
         </div>
         
-        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 16 }}>
-          {/* Search hint */}
-          <button onClick={() => { window.dispatchEvent(new CustomEvent('gg-open-palette')); }} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', border: '1px solid var(--line-2)', background: 'rgba(11,15,28,0.5)', cursor: 'pointer', transition: 'all 200ms', fontFamily: 'var(--sans)' }}
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12 }}>
+          {/* Search hint - hidden on mobile */}
+          <button className="gg-nav-search-hint" onClick={() => { window.dispatchEvent(new CustomEvent('gg-open-palette')); }} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', border: '1px solid var(--line-2)', background: 'rgba(11,15,28,0.5)', cursor: 'pointer', transition: 'all 200ms', fontFamily: 'var(--sans)' }}
             onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--fg-mute)'; e.currentTarget.style.background = 'var(--bg-2)'; }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--line-2)'; e.currentTarget.style.background = 'rgba(11,15,28,0.5)'; }}>
             <Search size={12} color="var(--fg-mute)" />
@@ -923,7 +1138,7 @@ function Nav({ page, navigate, walletConnected, connectWallet, walletAddr, solBa
           
           {walletConnected ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ fontSize: 13, color: 'var(--fg-dim)', fontVariantNumeric: 'tabular-nums', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div className="gg-nav-wallet-balance" style={{ fontSize: 13, color: 'var(--fg-dim)', fontVariantNumeric: 'tabular-nums', display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span style={{ color: 'var(--acid)', fontSize: 11 }}>◆</span> 
                 <span style={{ fontFamily: 'var(--mono)', fontWeight: 500 }}>{solBalance.toFixed(2)}</span>
                 <span style={{ color: 'var(--fg-mute)', fontSize: 11 }}>SOL</span>
@@ -938,9 +1153,87 @@ function Nav({ page, navigate, walletConnected, connectWallet, walletAddr, solBa
               <Wallet size={14} /> Connect Wallet
             </button>
           )}
+          
+          {/* Mobile hamburger - hidden on desktop */}
+          <button 
+            className="gg-nav-mobile-menu-btn"
+            onClick={() => setMobileMenuOpen(o => !o)}
+            style={{ 
+              display: 'none', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              width: 40, height: 40, 
+              border: '1px solid var(--line-2)', 
+              background: 'rgba(11,15,28,0.5)',
+              cursor: 'pointer',
+              padding: 0,
+            }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ width: 16, height: 1.5, background: 'var(--fg)', transition: 'transform 200ms', transform: mobileMenuOpen ? 'rotate(45deg) translate(3px, 3px)' : 'none' }} />
+              <div style={{ width: 16, height: 1.5, background: 'var(--fg)', opacity: mobileMenuOpen ? 0 : 1, transition: 'opacity 200ms' }} />
+              <div style={{ width: 16, height: 1.5, background: 'var(--fg)', transition: 'transform 200ms', transform: mobileMenuOpen ? 'rotate(-45deg) translate(4px, -4px)' : 'none' }} />
+            </div>
+          </button>
         </div>
       </div>
     </nav>
+    
+    {/* Mobile menu drawer */}
+    {mobileMenuOpen && (
+      <div style={{ 
+        position: 'fixed', top: 64, left: 0, right: 0, 
+        background: 'rgba(6,8,15,0.95)',
+        backdropFilter: 'blur(24px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+        borderBottom: '1px solid var(--line-2)',
+        zIndex: 49, 
+        padding: '8px 0',
+        animation: 'mobileMenuSlide 240ms cubic-bezier(0.2, 0.8, 0.2, 1)',
+        boxShadow: '0 12px 32px -8px rgba(0,0,0,0.5)',
+      }}>
+        <button 
+          onClick={() => { window.dispatchEvent(new CustomEvent('gg-open-palette')); setMobileMenuOpen(false); }} 
+          style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '14px 24px', background: 'none', border: 'none', borderBottom: '1px solid var(--line)', color: 'var(--fg-dim)', cursor: 'pointer', fontFamily: 'var(--sans)', fontSize: 14, textAlign: 'left' }}>
+          <Search size={14} />
+          Search vaults
+          <span style={{ marginLeft: 'auto' }} className="gg-kbd">⌘K</span>
+        </button>
+        {items.map(it => {
+          const active = page === it.id;
+          return (
+            <button 
+              key={it.id} 
+              onClick={() => handleNavigate(it.id)}
+              style={{ 
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                background: 'none', 
+                border: 'none', 
+                borderLeft: active ? '2px solid var(--acid)' : '2px solid transparent',
+                color: active ? 'var(--fg)' : 'var(--fg-dim)', 
+                padding: '14px 22px', 
+                fontSize: 16, 
+                cursor: 'pointer', 
+                fontWeight: 500, 
+                fontFamily: 'var(--sans)',
+                textAlign: 'left',
+                letterSpacing: '-0.005em',
+              }}>
+              {it.label}
+              {active && <ChevronRight size={14} style={{ marginLeft: 'auto', color: 'var(--acid)' }} />}
+            </button>
+          );
+        })}
+        <style>{`
+          @keyframes mobileMenuSlide {
+            from { opacity: 0; transform: translateY(-12px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+        `}</style>
+      </div>
+    )}
+    </>
   );
 }
 
@@ -1007,7 +1300,7 @@ function HomePage({ navigate, tokens, tvl, feesGenerated }) {
 
 function FloatingVault() {
   return (
-    <div style={{
+    <div className="gg-pip-vault" style={{
       position: 'fixed',
       bottom: 24,
       right: 24,
@@ -1047,7 +1340,7 @@ function Hero({ navigate, tvl, feesGenerated, tokens }) {
       <div style={{ position: 'absolute', top: '-20%', right: '-10%', width: 900, height: 900, background: 'radial-gradient(circle, rgba(107,163,255,0.10) 0%, rgba(159,122,234,0.05) 40%, transparent 70%)', filter: 'blur(80px)', pointerEvents: 'none' }} />
       <div className="gg-grid" style={{ position: 'absolute', inset: 0, opacity: 0.18, maskImage: 'radial-gradient(ellipse at center, black 0%, transparent 80%)' }} />
       
-      <div style={{ maxWidth: 1400, margin: '0 auto', padding: '64px 24px 0', position: 'relative', display: 'grid', gridTemplateColumns: '1fr 620px', gap: 48, alignItems: 'center', minHeight: 720 }}>
+      <div className="gg-resp-hero" style={{ maxWidth: 1400, margin: '0 auto', padding: '64px 24px 0', position: 'relative', display: 'grid', gridTemplateColumns: '1fr 620px', gap: 48, alignItems: 'center', minHeight: 720 }}>
         {/* LEFT: copy */}
         <div className="gg-rise">
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 56, padding: '6px 12px', background: 'rgba(11,15,28,0.5)', border: '1px solid var(--line-2)', width: 'fit-content', boxShadow: 'var(--hairline-top)' }}>
@@ -1077,7 +1370,7 @@ function Hero({ navigate, tvl, feesGenerated, tokens }) {
           </div>
 
           {/* live counter strip — now 4-up with vault count + active */}
-          <div style={{ marginTop: 56, display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 0, border: '1px solid var(--line-2)', maxWidth: 580 }}>
+          <div className="gg-resp-stats-4" style={{ marginTop: 56, display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 0, border: '1px solid var(--line-2)', maxWidth: 580 }}>
             <MicroStat label="Sealed" value={<CountUp to={tvl} formatter={v => `$${fmt(v, 1)}`} />} accent />
             <MicroStat label="Fees" value={<CountUp to={feesGenerated} formatter={v => `$${fmt(v, 0)}`} />} />
             <MicroStat label="Vaults" value={tokens.filter(t => t.graduated).length} />
@@ -1086,7 +1379,7 @@ function Hero({ navigate, tvl, feesGenerated, tokens }) {
         </div>
 
         {/* RIGHT: the giant vault inside instrument bezel */}
-        <div style={{ position: 'relative', height: 620, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div className="gg-resp-hero-vault-wrap" style={{ position: 'relative', height: 620, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <HeroVault />
         </div>
       </div>
@@ -1218,7 +1511,7 @@ function GraduatingNow({ tokens, navigate }) {
           </button>
         </div>
         
-        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(candidates.length, 5)}, 1fr)`, gap: 12 }}>
+        <div className="gg-resp-graduating-strip" style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(candidates.length, 5)}, 1fr)`, gap: 12 }}>
           {candidates.map(t => <GraduatingCard key={t.id} token={t} navigate={navigate} />)}
         </div>
       </div>
@@ -1275,8 +1568,10 @@ function OrbitalReadout({ position, label, value, active, color }) {
   const pos = positions[position];
   const isRight = position.includes('right');
   
+  const hideOnMobile = position === 'top-left' || position === 'bottom-right';
+  
   return (
-    <div style={{ 
+    <div className={hideOnMobile ? 'gg-resp-orbital-readout-hide-mobile' : ''} style={{ 
       position: 'absolute', 
       ...pos,
       zIndex: 4,
@@ -1384,7 +1679,7 @@ function HeroVault() {
 
   return (
     <div ref={containerRef} style={{ position: 'relative', width: 540, height: 540, perspective: 1200 }}>
-      <div style={{ 
+      <div className="gg-tilt-disable" style={{ 
         width: '100%', height: '100%', position: 'relative',
         transformStyle: 'preserve-3d',
         transform: `rotateY(${tilt.x}deg) rotateX(${tilt.y}deg)`,
@@ -1621,9 +1916,9 @@ function MicroStat({ label, value, accent }) {
 // MECHANISM FLOW — animated horizontal diagram
 function MechanismFlow() {
   return (
-    <section style={{ padding: '120px 24px', borderBottom: '1px solid var(--line)' }}>
+    <section className="gg-section-pad-xl" style={{ padding: '120px 24px', borderBottom: '1px solid var(--line)' }}>
       <div style={{ maxWidth: 1400, margin: '0 auto' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.6fr', gap: 80, marginBottom: 80, alignItems: 'end' }}>
+        <div className="gg-resp-mechanism-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1.6fr', gap: 80, marginBottom: 80, alignItems: 'end' }}>
           <div>
             <span style={{ fontSize: 12, color: 'var(--acid)', letterSpacing: '0.04em', fontWeight: 500, textTransform: 'uppercase' }}>§ The Mechanism</span>
             <h2 style={{ fontSize: 'clamp(34px, 4.5vw, 56px)', margin: '20px 0 0', fontWeight: 500, letterSpacing: '-0.03em', lineHeight: 1.02 }}>
@@ -1657,14 +1952,14 @@ function FlowDiagram() {
   ];
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 0, position: 'relative' }}>
+    <div className="gg-resp-mechanism-flow" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 0, position: 'relative' }}>
       {/* connecting line baseline */}
-      <div style={{ position: 'absolute', top: 60, left: '12.5%', right: '12.5%', height: 1, background: 'var(--line-2)', zIndex: 0 }} />
+      <div className="gg-resp-flow-line" style={{ position: 'absolute', top: 60, left: '12.5%', right: '12.5%', height: 1, background: 'var(--line-2)', zIndex: 0 }} />
       {/* progressive line with shimmer */}
-      <div style={{ position: 'absolute', top: 60, left: '12.5%', height: 1, background: 'linear-gradient(90deg, var(--amber), var(--purple), var(--acid))', zIndex: 1, width: `calc(${Math.min(activeStep, 3) / 3 * 75}%)`, transition: 'width 1400ms cubic-bezier(0.2, 0.8, 0.2, 1)', boxShadow: '0 0 8px var(--acid)' }} />
+      <div className="gg-resp-flow-line" style={{ position: 'absolute', top: 60, left: '12.5%', height: 1, background: 'linear-gradient(90deg, var(--amber), var(--purple), var(--acid))', zIndex: 1, width: `calc(${Math.min(activeStep, 3) / 3 * 75}%)`, transition: 'width 1400ms cubic-bezier(0.2, 0.8, 0.2, 1)', boxShadow: '0 0 8px var(--acid)' }} />
       {/* travelling pulse on the line - React-driven position */}
       {activeStep > 0 && activeStep <= 3 && (
-        <div key={`pulse-${activeStep}`} style={{ 
+        <div key={`pulse-${activeStep}`} className="gg-resp-flow-pulse" style={{ 
           position: 'absolute', top: 56, 
           left: `calc(12.5% + ${(activeStep - 1) / 3 * 75}%)`, 
           width: 10, height: 10, borderRadius: '50%', 
@@ -1733,7 +2028,7 @@ function ComparisonFlow() {
           </h2>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0, border: '1px solid var(--line-2)' }}>
+        <div className="gg-resp-comparison" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0, border: '1px solid var(--line-2)' }}>
           <ComparisonColumn
             kind="bad"
             label="Other launchpads"
@@ -1790,7 +2085,7 @@ function ComparisonColumn({ label, sublabel, steps, color, highlight, kind }) {
   return (
     <div style={{ padding: 40, background: highlight ? 'rgba(107,163,255,0.03)' : 'transparent', borderRight: '1px solid var(--line-2)', position: 'relative' }}>
       {/* HEADER VISUAL — large vault with state-specific animation */}
-      <div style={{ height: 200, marginBottom: 32, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '1px solid var(--line)', paddingBottom: 32 }}>
+      <div className="gg-comparison-vault-wrap" style={{ height: 200, marginBottom: 32, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '1px solid var(--line)', paddingBottom: 32 }}>
         {kind === 'bad' ? (
           <BadVaultVisual active={pulseStep === steps.length - 1} />
         ) : (
@@ -2190,15 +2485,20 @@ function DiscoverPage({ navigate, tokens }) {
 
       {/* table */}
       <div className="gg-card" style={{ overflow: 'hidden' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '40px 60px 2fr 1fr 1fr 1fr 1fr 140px', padding: '14px 20px', borderBottom: '1px solid var(--line-2)', background: 'linear-gradient(180deg, var(--bg-2) 0%, var(--bg-1) 100%)', boxShadow: 'var(--hairline-top)' }}>
-          {['#', '', 'Token', 'Price', '24h', 'Market Cap', 'Volume 24h', 'Vault'].map(h => (
-            <div key={h} style={{ fontSize: 10, color: 'var(--fg-mute)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>{h}</div>
-          ))}
+        <div className="gg-resp-discover-table-head" style={{ display: 'grid', gridTemplateColumns: '40px 60px 2fr 1fr 1fr 1fr 1fr 140px', padding: '14px 20px', borderBottom: '1px solid var(--line-2)', background: 'linear-gradient(180deg, var(--bg-2) 0%, var(--bg-1) 100%)', boxShadow: 'var(--hairline-top)' }}>
+          <div className="gg-resp-discover-hide-mobile" style={{ fontSize: 10, color: 'var(--fg-mute)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>#</div>
+          <div style={{ fontSize: 10, color: 'var(--fg-mute)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}></div>
+          <div style={{ fontSize: 10, color: 'var(--fg-mute)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>Token</div>
+          <div className="gg-resp-discover-hide-mobile" style={{ fontSize: 10, color: 'var(--fg-mute)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>Price</div>
+          <div style={{ fontSize: 10, color: 'var(--fg-mute)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>24h</div>
+          <div className="gg-resp-discover-hide-mobile" style={{ fontSize: 10, color: 'var(--fg-mute)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>Market Cap</div>
+          <div className="gg-resp-discover-hide-mobile" style={{ fontSize: 10, color: 'var(--fg-mute)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>Volume 24h</div>
+          <div className="gg-resp-discover-hide-mobile" style={{ fontSize: 10, color: 'var(--fg-mute)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>Vault</div>
         </div>
         {filtered.map((t, i) => {
           const up = t.change24h >= 0;
           return (
-            <button key={t.id} onClick={() => navigate('token', t.id)} style={{ position: 'relative', display: 'grid', gridTemplateColumns: '40px 60px 2fr 1fr 1fr 1fr 1fr 140px', padding: '14px 20px', borderBottom: '1px solid var(--line)', background: 'transparent', border: 'none', borderBottomColor: 'var(--line)', borderBottomStyle: 'solid', borderBottomWidth: 1, width: '100%', textAlign: 'left', cursor: 'pointer', alignItems: 'center', color: 'var(--fg)', transition: 'all 200ms cubic-bezier(0.2, 0.8, 0.2, 1)', fontFamily: 'var(--sans)' }}
+            <button key={t.id} onClick={() => navigate('token', t.id)} className="gg-resp-discover-table-row" style={{ position: 'relative', display: 'grid', gridTemplateColumns: '40px 60px 2fr 1fr 1fr 1fr 1fr 140px', padding: '14px 20px', borderBottom: '1px solid var(--line)', background: 'transparent', border: 'none', borderBottomColor: 'var(--line)', borderBottomStyle: 'solid', borderBottomWidth: 1, width: '100%', textAlign: 'left', cursor: 'pointer', alignItems: 'center', color: 'var(--fg)', transition: 'all 200ms cubic-bezier(0.2, 0.8, 0.2, 1)', fontFamily: 'var(--sans)' }}
               onMouseEnter={e => { 
                 e.currentTarget.style.background = 'linear-gradient(90deg, rgba(107,163,255,0.04) 0%, transparent 100%)';
                 const indicator = e.currentTarget.querySelector('[data-indicator]');
@@ -2211,20 +2511,24 @@ function DiscoverPage({ navigate, tokens }) {
               }}>
               {/* sliding left edge indicator */}
               <div data-indicator style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 2, background: 'var(--acid)', boxShadow: '0 0 8px var(--acid)', transform: 'scaleY(0)', transformOrigin: 'center', transition: 'transform 200ms cubic-bezier(0.2, 0.8, 0.2, 1)' }} />
-              <div className="mono" style={{ fontSize: 12, color: 'var(--fg-mute)' }}>{String(i + 1).padStart(2, '0')}</div>
+              <div className="mono gg-resp-discover-hide-mobile" style={{ fontSize: 12, color: 'var(--fg-mute)' }}>{String(i + 1).padStart(2, '0')}</div>
               <div><Vault size={36} state={t.graduated ? 'sealed' : 'open'} fillPct={t.graduated ? 100 : t.progress} animate={false} glow={false} /></div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div className="gg-token-thumb" style={{ width: 36, height: 36, fontSize: 18 }}>{t.image}</div>
-                <div>
-                  <div style={{ fontSize: 14, fontWeight: 600, letterSpacing: '-0.005em' }}>{t.symbol}</div>
-                  <div style={{ fontSize: 12, color: 'var(--fg-dim)', marginTop: 1 }}>{t.name}</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+                <div className="gg-token-thumb" style={{ width: 36, height: 36, fontSize: 18, flexShrink: 0 }}>{t.image}</div>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, letterSpacing: '-0.005em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.symbol}</div>
+                  <div style={{ fontSize: 12, color: 'var(--fg-dim)', marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.name}</div>
+                  {/* Mobile-only inline data */}
+                  <div className="gg-resp-discover-mobile-block" style={{ display: 'none' }}>
+                    ${fmt(t.mcap, 1)} mcap{t.graduated ? ` · SEALED ${fmt(t.lpLocked, 0)} SOL` : ` · ${t.progress}%`}
+                  </div>
                 </div>
               </div>
-              <div className="num" style={{ fontSize: 13, fontWeight: 500 }}>${fmtPrice(t.price)}</div>
-              <div className="num" style={{ fontSize: 13, color: up ? 'var(--green)' : 'var(--red)', fontWeight: 500 }}>{up ? '↑' : '↓'} {Math.abs(t.change24h).toFixed(1)}%</div>
-              <div className="num" style={{ fontSize: 13, fontWeight: 500 }}>${fmt(t.mcap, 1)}</div>
-              <div className="num" style={{ fontSize: 13, color: 'var(--fg-dim)' }}>${fmt(t.volume24h, 1)}</div>
-              <div>
+              <div className="num gg-resp-discover-hide-mobile" style={{ fontSize: 13, fontWeight: 500 }}>${fmtPrice(t.price)}</div>
+              <div className="num" style={{ fontSize: 13, color: up ? 'var(--green)' : 'var(--red)', fontWeight: 500, textAlign: 'right' }}>{up ? '↑' : '↓'} {Math.abs(t.change24h).toFixed(1)}%</div>
+              <div className="num gg-resp-discover-hide-mobile" style={{ fontSize: 13, fontWeight: 500 }}>${fmt(t.mcap, 1)}</div>
+              <div className="num gg-resp-discover-hide-mobile" style={{ fontSize: 13, color: 'var(--fg-dim)' }}>${fmt(t.volume24h, 1)}</div>
+              <div className="gg-resp-discover-hide-mobile">
                 {t.graduated ? (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <div className="gg-led" style={{ color: 'var(--acid)', width: 5, height: 5 }} />
@@ -2305,7 +2609,7 @@ function TokenPage({ token, navigate, walletConnected, connectWallet, solBalance
       </div>
 
       {/* header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 24, marginBottom: 40 }}>
+      <div className="gg-token-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 24, marginBottom: 40 }}>
         <div style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
           <div className="gg-token-thumb" style={{ width: 96, height: 96, fontSize: 46 }}>{token.image}</div>
           <div>
@@ -2332,7 +2636,7 @@ function TokenPage({ token, navigate, walletConnected, connectWallet, solBalance
       </div>
 
       {/* THE INSPECTOR — main 2-col layout */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: 24, alignItems: 'start' }}>
+      <div className="gg-resp-token-detail" style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: 24, alignItems: 'start' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
           {/* VAULT INSPECTOR */}
           <VaultInspector token={token} feesLive={feesLive} />
@@ -2493,7 +2797,7 @@ function VaultInspector({ token, feesLive }) {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 0, position: 'relative' }}>
+      <div className="gg-resp-inspector" style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 0, position: 'relative' }}>
         {/* LEFT: visual */}
         <div style={{ padding: 32, borderRight: '1px solid var(--line)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 360, position: 'relative', overflow: 'hidden' }}>
           {/* ambient backdrop */}
@@ -2712,14 +3016,14 @@ function StakePage({ navigate, positions, tokens, walletConnected, connectWallet
                 if (!token) return null;
                 const pnl = ((pos.currentValue - pos.baseValue) / pos.baseValue) * 100;
                 return (
-                  <div key={pos.tokenId} className="gg-card gg-magnetic" style={{ padding: 0, display: 'grid', gridTemplateColumns: '160px 1fr auto', gap: 0, alignItems: 'stretch', overflow: 'hidden' }}>
+                  <div key={pos.tokenId} className="gg-card gg-magnetic gg-resp-stake-position" style={{ padding: 0, display: 'grid', gridTemplateColumns: '160px 1fr auto', gap: 0, alignItems: 'stretch', overflow: 'hidden' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid var(--line)', padding: 24, position: 'relative' }}>
                       <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at center, rgba(107,163,255,0.10) 0%, transparent 65%)', filter: 'blur(20px)', pointerEvents: 'none' }} />
                       <div style={{ position: 'relative' }}>
                         <Vault size={88} state="sealed" fillPct={100} animate={true} breathe={true} />
                       </div>
                     </div>
-                    <div style={{ padding: 24, display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 24, alignItems: 'center' }}>
+                    <div className="gg-resp-stake-metrics" style={{ padding: 24, display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 24, alignItems: 'center' }}>
                       <div>
                         <div style={{ fontSize: 16, fontWeight: 500, marginBottom: 4 }}>gLP-{token.symbol}</div>
                         <div className="mono" style={{ fontSize: 12, color: 'var(--fg-dim)' }}>{fmt(pos.gLPAmount, 0)} gLP</div>
@@ -2738,7 +3042,7 @@ function StakePage({ navigate, positions, tokens, walletConnected, connectWallet
                         <div className="num" style={{ fontSize: 16, fontWeight: 500, color: 'var(--acid)' }}>+◆ {pos.fees24h.toFixed(4)}</div>
                       </div>
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 1, borderLeft: '1px solid var(--line)' }}>
+                    <div className="gg-resp-stake-actions" style={{ display: 'flex', flexDirection: 'column', gap: 1, borderLeft: '1px solid var(--line)' }}>
                       <button onClick={() => claim(pos.tokenId)} className="gg-btn" style={{ border: 'none', borderBottom: '1px solid var(--line)', flex: 1, padding: '14px 24px' }}>Claim</button>
                       <button onClick={() => unstake(pos.tokenId)} className="gg-btn" style={{ border: 'none', flex: 1, padding: '14px 24px' }}>Sell gLP</button>
                     </div>
@@ -2960,8 +3264,8 @@ function DocsPage() {
         </p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: 64, alignItems: 'start' }}>
-        <nav style={{ position: 'sticky', top: 88 }}>
+      <div className="gg-resp-docs" style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: 64, alignItems: 'start' }}>
+        <nav className="gg-resp-docs-toc" style={{ position: 'sticky', top: 88 }}>
           <div style={{ fontSize: 11, color: 'var(--fg-mute)', letterSpacing: '0.04em', fontWeight: 500, textTransform: 'uppercase', marginBottom: 16 }}>Contents</div>
           {sections.map(s => (
             <a key={s.num} href={`#sec-${s.num}`} style={{ display: 'block', padding: '7px 0', fontSize: 13, color: 'var(--fg-dim)', borderTop: '1px solid var(--line)' }}>
