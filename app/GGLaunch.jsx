@@ -903,11 +903,17 @@ function Styles() {
           max-width: 100vw !important;
           overflow: hidden !important;
           margin-bottom: -8px !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          padding: 0 !important;
         }
-        /* Scale down the hero vault container */
+        /* Scale down the hero vault container - explicit centering */
         .gg-resp-hero-vault-wrap > div {
           transform: scale(0.62) !important;
           transform-origin: center center !important;
+          flex-shrink: 0 !important;
+          margin: 0 !important;
         }
         .gg-resp-stats-4 {
           grid-template-columns: repeat(2, 1fr) !important;
@@ -927,16 +933,41 @@ function Styles() {
         }
         .gg-resp-mechanism-flow {
           grid-template-columns: 1fr !important;
-          gap: 32px !important;
+          gap: 8px !important;
         }
         .gg-resp-mechanism-flow > div {
-          padding: 0 !important;
+          padding: 24px 0 !important;
           text-align: left !important;
+          border-bottom: 1px solid var(--line) !important;
         }
+        .gg-resp-mechanism-flow > div:last-child {
+          border-bottom: none !important;
+        }
+        /* The vault sits inline at small size next to the number */
         .gg-resp-mechanism-flow > div > div:first-child {
           height: auto !important;
-          margin-bottom: 16px !important;
+          margin-bottom: 12px !important;
           justify-content: flex-start !important;
+          align-items: center !important;
+          gap: 14px !important;
+        }
+        /* Hide active-step shockwave ring on mobile - too cluttered */
+        .gg-resp-mechanism-flow > div > div:first-child > div[style*="shockwave"] {
+          display: none !important;
+        }
+        .gg-resp-mechanism-flow > div > div:nth-child(2) {
+          font-size: 11px !important;
+          margin-bottom: 6px !important;
+          letter-spacing: 0.06em !important;
+        }
+        .gg-resp-mechanism-flow > div > div:nth-child(3) {
+          font-size: 22px !important;
+          margin-bottom: 8px !important;
+        }
+        .gg-resp-mechanism-flow > div > div:nth-child(4) {
+          font-size: 14px !important;
+          max-width: 100% !important;
+          margin: 0 !important;
         }
         .gg-resp-flow-line, .gg-resp-flow-pulse {
           display: none !important;
