@@ -843,6 +843,10 @@ function Styles() {
         max-width: 100vw;
       }
       
+      /* Desktop default for compact mobile connect button */
+      .gg-nav-connect-text-short { display: none; }
+      .gg-nav-connect-text-full { display: inline; }
+      
       /* Mobile + tablet — 900px and below */
       @media (max-width: 900px) {
         /* Disable any leftover heavy effects */
@@ -860,34 +864,56 @@ function Styles() {
         /* HERO */
         .gg-resp-hero {
           grid-template-columns: 1fr !important;
-          padding: 24px 16px 0 !important;
+          padding: 16px 16px 0 !important;
           min-height: auto !important;
-          gap: 16px !important;
+          gap: 0 !important;
           max-width: 100vw !important;
+        }
+        /* Center everything inside the copy column on mobile */
+        .gg-resp-hero > div:not(.gg-resp-hero-vault-wrap) {
+          text-align: center !important;
+          display: flex !important;
+          flex-direction: column !important;
+          align-items: center !important;
         }
         .gg-resp-hero h1 {
           font-size: clamp(38px, 9vw, 60px) !important;
           line-height: 1.05 !important;
+          text-align: center !important;
         }
         .gg-resp-hero p {
           font-size: 16px !important;
+          text-align: center !important;
+          max-width: 100% !important;
+        }
+        /* Eyebrow pill - center it and reduce margin */
+        .gg-resp-hero > div > div:first-child {
+          margin-bottom: 24px !important;
+          margin-left: auto !important;
+          margin-right: auto !important;
+        }
+        /* Buttons row - center */
+        .gg-resp-hero > div > div[style*="flex-wrap"] {
+          justify-content: center !important;
         }
         .gg-resp-hero-vault-wrap {
-          height: 420px !important;
+          height: 360px !important;
           order: -1 !important;
           width: 100% !important;
           max-width: 100vw !important;
           overflow: hidden !important;
+          margin-bottom: -8px !important;
         }
         /* Scale down the hero vault container */
         .gg-resp-hero-vault-wrap > div {
-          transform: scale(0.7) !important;
+          transform: scale(0.62) !important;
           transform-origin: center center !important;
         }
         .gg-resp-stats-4 {
           grid-template-columns: repeat(2, 1fr) !important;
           max-width: 100% !important;
           margin-top: 32px !important;
+          width: 100% !important;
         }
         .gg-resp-stats-4 > * {
           padding: 16px 14px !important;
@@ -1035,6 +1061,13 @@ function Styles() {
         .gg-nav-mobile-menu-btn {
           display: flex !important;
         }
+        .gg-nav-connect-text-full { display: none !important; }
+        .gg-nav-connect-text-short { display: inline !important; }
+        .gg-nav-connect-btn {
+          padding: 8px 12px !important;
+          font-size: 12px !important;
+          min-height: 36px !important;
+        }
         
         /* PIP VAULT */
         .gg-pip-vault {
@@ -1079,10 +1112,10 @@ function Styles() {
           font-size: clamp(34px, 11vw, 48px) !important;
         }
         .gg-resp-hero-vault-wrap {
-          height: 340px !important;
+          height: 300px !important;
         }
         .gg-resp-hero-vault-wrap > div {
-          transform: scale(0.55) !important;
+          transform: scale(0.5) !important;
         }
         .gg-resp-stats-4 > * .num {
           font-size: 16px !important;
@@ -1203,8 +1236,10 @@ function Nav({ page, navigate, walletConnected, connectWallet, walletAddr, solBa
               </div>
             </div>
           ) : (
-            <button onClick={connectWallet} className="gg-btn gg-btn-primary">
-              <Wallet size={14} /> Connect Wallet
+            <button onClick={connectWallet} className="gg-btn gg-btn-primary gg-nav-connect-btn">
+              <Wallet size={14} /> 
+              <span className="gg-nav-connect-text-full">Connect Wallet</span>
+              <span className="gg-nav-connect-text-short">Connect</span>
             </button>
           )}
           
@@ -1625,7 +1660,7 @@ function OrbitalReadout({ position, label, value, active, color }) {
   const hideOnMobile = position === 'top-left' || position === 'bottom-right';
   
   return (
-    <div className={hideOnMobile ? 'gg-resp-orbital-readout-hide-mobile' : ''} style={{ 
+    <div className="gg-resp-orbital-readout-hide-mobile" style={{ 
       position: 'absolute', 
       ...pos,
       zIndex: 4,
