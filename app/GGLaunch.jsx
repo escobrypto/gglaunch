@@ -492,6 +492,24 @@ function Styles() {
       }
       main, nav, footer { position: relative; z-index: 1; }
       
+      /* Section flow — soft gradient bleeds between sections so they feel connected */
+      main > div > section,
+      main > div > .gg-fade-in > section {
+        position: relative;
+      }
+      main > div > section::after,
+      main > div > .gg-fade-in > section::after {
+        content: '';
+        position: absolute;
+        bottom: -1px;
+        left: 0;
+        right: 0;
+        height: 80px;
+        background: linear-gradient(180deg, transparent 0%, rgba(107,163,255,0.02) 50%, rgba(159,122,234,0.03) 100%);
+        pointer-events: none;
+        z-index: 0;
+      }
+      
       .gg-grid {
         background-image:
           linear-gradient(var(--line) 1px, transparent 1px),
@@ -1131,6 +1149,9 @@ function Styles() {
         .gg-section-pad-xl { padding: 80px 16px !important; }
         .gg-page-pad { padding: 24px 16px 64px !important; }
         
+        /* THE SEAL composition shrinks proportionally */
+        .gg-resp-seal-wrap { width: 360px !important; height: 360px !important; }
+        
         /* Page max-width containers should never overflow */
         .gg-fade-in > div, .gg-page-enter > div {
           max-width: 100% !important;
@@ -1411,7 +1432,10 @@ function HomePage({ navigate, tokens, tvl, feesGenerated }) {
       <Hero navigate={navigate} tvl={tvl} feesGenerated={feesGenerated} tokens={tokens} />
       <Reveal><MechanismFlow /></Reveal>
       <Reveal><ComparisonFlow /></Reveal>
+      <TheNetwork tokens={tokens} />
       <Manifesto />
+      <TheTape />
+      <TheSeal />
       <Reveal><FinalCTA navigate={navigate} /></Reveal>
       {showFloater && <FloatingVault />}
     </div>
@@ -2524,6 +2548,753 @@ function ManifestoClosing() {
       <div style={{ fontSize: 16, color: 'var(--fg-dim)', marginTop: 20, lineHeight: 1.6, maxWidth: 580, margin: '20px auto 0' }}>
         We are building the place where people are protected by the math itself — where a man's word is kept by the chain because no man can break it.
       </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// THE NETWORK — stylized constellation of vaults across the world
+// ============================================================================
+function TheNetwork({ tokens }) {
+  const [reveal, setReveal] = useState(false);
+  const [pulseIdx, setPulseIdx] = useState(0);
+  const ref = useRef(null);
+  
+  useEffect(() => {
+    if (!ref.current) return;
+    const obs = new IntersectionObserver(
+      (entries) => entries.forEach(e => { if (e.isIntersecting) { setReveal(true); obs.unobserve(e.target); } }),
+      { threshold: 0.2 }
+    );
+    obs.observe(ref.current);
+    return () => obs.disconnect();
+  }, []);
+  
+  // Procedurally generated "vault locations" — pseudo-geographic spread
+  const nodes = useMemo(() => {
+    const out = [];
+    const n = 64;
+    // distribute roughly along latitudes that match populated areas
+    const latBands = [
+      { y: 0.18, weight: 0.25, name: 'Northern' },   // North America / Europe
+      { y: 0.32, weight: 0.30, name: 'Mid-North' },  // US, EU, China, Japan
+      { y: 0.50, weight: 0.20, name: 'Equatorial' }, // SE Asia, Africa, S America
+      { y: 0.65, weight: 0.15, name: 'Southern' },   // Australia, S Africa, S America
+      { y: 0.82, weight: 0.10, name: 'Far South' },
+    ];
+    for (let i = 0; i < n; i++) {
+      const r = Math.random();
+      let cum = 0;
+      let band;
+      for (const b of latBands) { cum += b.weight; if (r < cum) { band = b; break; } }
+      const y = band.y + (Math.random() - 0.5) * 0.12;
+      const x = Math.random();
+      out.push({ 
+        x: x * 100, 
+        y: y * 100, 
+        size: Math.random() < 0.15 ? 'lg' : Math.random() < 0.5 ? 'md' : 'sm',
+        delay: Math.random() * 4,
+      });
+    }
+    return out;
+  }, []);
+  
+  // Pulse traveling between random nodes
+  useEffect(() => {
+    if (!reveal) return;
+    const id = setInterval(() => setPulseIdx(i => (i + 1) % nodes.length), 1800);
+    return () => clearInterval(id);
+  }, [reveal, nodes.length]);
+  
+  const sealedCount = tokens.filter(t => t.graduated).length;
+  const totalLocked = tokens.filter(t => t.graduated).reduce((s, t) => s + t.lpLocked, 0);
+  
+  return (
+    <section ref={ref} className="gg-section-pad-xl" style={{ 
+      position: 'relative',
+      padding: '140px 24px 160px',
+      background: 'linear-gradient(180deg, var(--bg-1) 0%, #050811 100%)',
+      borderBottom: '1px solid var(--line)',
+      overflow: 'hidden',
+    }}>
+      <div style={{ maxWidth: 1400, margin: '0 auto' }}>
+        {/* Eyebrow + heading */}
+        <div style={{ textAlign: 'center', marginBottom: 64 }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, marginBottom: 32, padding: '6px 12px', background: 'rgba(11,15,28,0.5)', border: '1px solid var(--line-2)' }}>
+            <div className="gg-led gg-pulse" style={{ color: 'var(--acid)' }} />
+            <span style={{ fontSize: 11, color: 'var(--fg-dim)', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', fontFamily: 'var(--mono)' }}>The Network</span>
+          </div>
+          
+          <h2 style={{ fontSize: 'clamp(40px, 5.5vw, 72px)', margin: 0, fontWeight: 400, letterSpacing: '-0.035em', lineHeight: 1 }}>
+            <span className="serif" style={{ fontStyle: 'italic', fontWeight: 400, color: 'var(--fg-dim)' }}>A constellation of</span><br />
+            <span style={{ fontWeight: 500 }}>permanent vaults.</span>
+          </h2>
+          
+          <div style={{ marginTop: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 32, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+              <span style={{ fontSize: 36, fontWeight: 500, color: 'var(--acid)', fontFamily: 'var(--mono)', letterSpacing: '-0.02em' }}>
+                <CountUp to={sealedCount} formatter={v => Math.floor(v).toString()} />
+              </span>
+              <span style={{ fontSize: 12, color: 'var(--fg-dim)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>vaults sealed</span>
+            </div>
+            <div style={{ width: 1, height: 32, background: 'var(--line-2)' }} />
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+              <span style={{ fontSize: 36, fontWeight: 500, color: 'var(--purple-l)', fontFamily: 'var(--mono)', letterSpacing: '-0.02em' }}>
+                <CountUp to={totalLocked} formatter={v => Math.floor(v).toLocaleString()} />
+              </span>
+              <span style={{ fontSize: 12, color: 'var(--fg-dim)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>SOL locked</span>
+            </div>
+            <div style={{ width: 1, height: 32, background: 'var(--line-2)' }} />
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+              <span style={{ fontSize: 36, fontWeight: 500, color: 'var(--steel)', fontFamily: 'var(--mono)', letterSpacing: '-0.02em' }}>∞</span>
+              <span style={{ fontSize: 12, color: 'var(--fg-dim)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>forever</span>
+            </div>
+          </div>
+        </div>
+        
+        {/* The constellation map */}
+        <div style={{ 
+          position: 'relative', 
+          height: 480, 
+          maxWidth: 1100, 
+          margin: '0 auto',
+          opacity: reveal ? 1 : 0,
+          transition: 'opacity 1600ms ease 200ms',
+        }}>
+          {/* atmospheric backdrop */}
+          <div style={{ 
+            position: 'absolute', inset: 0, 
+            background: 'radial-gradient(ellipse 800px 400px at 50% 50%, rgba(107,163,255,0.08) 0%, transparent 70%)',
+            filter: 'blur(40px)',
+            pointerEvents: 'none',
+          }} />
+          
+          {/* faint grid lines suggesting latitude / longitude */}
+          <svg viewBox="0 0 1100 480" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.4 }}>
+            {/* horizontal lines (latitude) */}
+            {[80, 160, 240, 320, 400].map(y => (
+              <line key={`h${y}`} x1="0" y1={y} x2="1100" y2={y} stroke="var(--line-2)" strokeWidth="0.4" strokeDasharray="2 8" />
+            ))}
+            {/* vertical lines (longitude) */}
+            {[100, 250, 400, 550, 700, 850, 1000].map(x => (
+              <line key={`v${x}`} x1={x} y1="0" x2={x} y2="480" stroke="var(--line-2)" strokeWidth="0.4" strokeDasharray="2 8" />
+            ))}
+            {/* Connection lines between nearby nodes */}
+            {nodes.map((n, i) => {
+              // connect to up to 2 nearest nodes
+              const dists = nodes.map((m, j) => ({ j, d: Math.hypot(n.x - m.x, n.y - m.y) })).filter(d => d.j !== i).sort((a, b) => a.d - b.d).slice(0, 2);
+              return dists.map(({ j, d }) => {
+                if (d > 18) return null;
+                const m = nodes[j];
+                return (
+                  <line 
+                    key={`l${i}-${j}`} 
+                    x1={`${n.x}%`} y1={`${n.y}%`} 
+                    x2={`${m.x}%`} y2={`${m.y}%`}
+                    stroke="var(--acid)" 
+                    strokeWidth="0.3" 
+                    opacity={0.15}
+                  />
+                );
+              });
+            })}
+          </svg>
+          
+          {/* Nodes */}
+          {nodes.map((n, i) => {
+            const isPulse = i === pulseIdx;
+            const sizeMap = { lg: 5, md: 3.5, sm: 2 };
+            const r = sizeMap[n.size];
+            return (
+              <div key={i} style={{
+                position: 'absolute',
+                left: `${n.x}%`,
+                top: `${n.y}%`,
+                width: r * 2,
+                height: r * 2,
+                marginLeft: -r,
+                marginTop: -r,
+                borderRadius: '50%',
+                background: n.size === 'lg' ? 'var(--acid)' : n.size === 'md' ? 'var(--purple-l)' : 'var(--steel)',
+                boxShadow: isPulse 
+                  ? `0 0 16px ${n.size === 'lg' ? '#6ba3ff' : n.size === 'md' ? '#b794f4' : '#5a8dd6'}, 0 0 32px ${n.size === 'lg' ? '#6ba3ff' : '#9f7aea'}`
+                  : `0 0 ${r * 2}px ${n.size === 'lg' ? '#6ba3ff88' : '#9f7aea66'}`,
+                opacity: reveal ? (isPulse ? 1 : 0.7) : 0,
+                transform: isPulse ? 'scale(1.6)' : 'scale(1)',
+                transition: `opacity 800ms ease ${n.delay * 200}ms, transform 600ms cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 600ms`,
+                zIndex: isPulse ? 3 : 1,
+              }} />
+            );
+          })}
+          
+          {/* Pulsing ring around the active node */}
+          {reveal && (
+            <div key={`ring-${pulseIdx}`} style={{
+              position: 'absolute',
+              left: `${nodes[pulseIdx]?.x ?? 50}%`,
+              top: `${nodes[pulseIdx]?.y ?? 50}%`,
+              width: 40,
+              height: 40,
+              marginLeft: -20,
+              marginTop: -20,
+              borderRadius: '50%',
+              border: '1px solid var(--acid)',
+              opacity: 0,
+              animation: 'networkRing 1.6s cubic-bezier(0.2, 0.8, 0.2, 1) 1',
+              pointerEvents: 'none',
+              zIndex: 2,
+            }} />
+          )}
+        </div>
+        
+        {/* Caption below */}
+        <div style={{ textAlign: 'center', marginTop: 48, opacity: reveal ? 1 : 0, transition: 'opacity 1200ms ease 800ms' }}>
+          <div style={{ fontSize: 13, color: 'var(--fg-dim)', maxWidth: 540, margin: '0 auto', lineHeight: 1.6 }}>
+            Every dot is a vault. Every line is permanent liquidity that cannot be retrieved by any party — including us.
+          </div>
+        </div>
+      </div>
+      
+      <style>{`
+        @keyframes networkRing {
+          0% { transform: scale(0.5); opacity: 0.8; }
+          100% { transform: scale(3); opacity: 0; }
+        }
+      `}</style>
+    </section>
+  );
+}
+
+// ============================================================================
+// THE TAPE — typographic marquee, 3 lanes scrolling at different speeds
+// ============================================================================
+function TheTape() {
+  // Each lane has its own content, speed, and direction
+  const lane1 = ['IMMUTABLE', '∞', 'SEALED', '◆', 'FOREVER', '∞', 'NO WITHDRAW', '◆', 'NO MULTISIG', '∞', 'NO EXIT', '◆', 'BY THE MATH', '∞'];
+  const lane2 = ['vault.pda', '0xa7b3f5e9c2', 'permanent', '0xfc12d8a4', 'liquidity', '0x5b9e3a71', 'sealed', '0xc4f8e2b6'];
+  const lane3 = ['THE STRONG ARE NOT ENTITLED TO TAKE FROM THE WEAK', '·', 'A MAN\'S WORD IS KEPT BY THE CHAIN BECAUSE NO MAN CAN BREAK IT', '·'];
+  
+  return (
+    <section style={{ 
+      position: 'relative',
+      padding: '80px 0',
+      background: 'linear-gradient(180deg, #050811 0%, var(--bg) 50%, #050811 100%)',
+      borderTop: '1px solid var(--line)',
+      borderBottom: '1px solid var(--line)',
+      overflow: 'hidden',
+    }}>
+      {/* atmospheric */}
+      <div style={{
+        position: 'absolute',
+        inset: 0,
+        background: 'radial-gradient(ellipse 1200px 400px at 50% 50%, rgba(107,163,255,0.06) 0%, transparent 70%)',
+        filter: 'blur(60px)',
+        pointerEvents: 'none',
+      }} />
+      
+      {/* edge masks */}
+      <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 200, background: 'linear-gradient(90deg, var(--bg) 0%, transparent 100%)', zIndex: 5, pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 200, background: 'linear-gradient(270deg, var(--bg) 0%, transparent 100%)', zIndex: 5, pointerEvents: 'none' }} />
+      
+      {/* Lane 1 — large display, slow, primary direction */}
+      <div style={{ 
+        display: 'flex', 
+        whiteSpace: 'nowrap', 
+        animation: 'tapeScroll 60s linear infinite',
+        marginBottom: 8,
+      }}>
+        {[...lane1, ...lane1, ...lane1].map((word, i) => (
+          <span key={i} style={{
+            fontSize: 'clamp(48px, 7vw, 96px)',
+            fontWeight: 500,
+            letterSpacing: '-0.03em',
+            padding: '0 32px',
+            color: word === '∞' ? 'var(--acid)' : word === '◆' ? 'var(--purple-l)' : 'var(--fg)',
+            fontFamily: word === '∞' || word === '◆' ? 'var(--sans)' : 'var(--sans)',
+            opacity: word === '∞' || word === '◆' ? 0.9 : 1,
+          }}>
+            {word}
+          </span>
+        ))}
+      </div>
+      
+      {/* Lane 2 — mono, faster, reverse direction, dimmer */}
+      <div style={{ 
+        display: 'flex', 
+        whiteSpace: 'nowrap', 
+        animation: 'tapeScrollReverse 40s linear infinite',
+        marginBottom: 8,
+      }}>
+        {[...lane2, ...lane2, ...lane2, ...lane2].map((word, i) => (
+          <span key={i} style={{
+            fontSize: 16,
+            fontFamily: 'var(--mono)',
+            color: word.startsWith('0x') ? 'var(--fg-mute)' : 'var(--fg-dim)',
+            padding: '0 24px',
+            letterSpacing: '0.04em',
+            fontWeight: 500,
+          }}>
+            {word}
+          </span>
+        ))}
+      </div>
+      
+      {/* Lane 3 — serif italic, the manifesto, slowest, dim */}
+      <div style={{ 
+        display: 'flex', 
+        whiteSpace: 'nowrap', 
+        animation: 'tapeScroll 90s linear infinite',
+      }}>
+        {[...lane3, ...lane3, ...lane3].map((word, i) => (
+          <span key={i} className="serif" style={{
+            fontSize: 22,
+            fontStyle: 'italic',
+            color: word === '·' ? 'var(--acid)' : 'var(--fg-dim)',
+            padding: '0 24px',
+            fontWeight: 400,
+            letterSpacing: '-0.005em',
+          }}>
+            {word}
+          </span>
+        ))}
+      </div>
+      
+      <style>{`
+        @keyframes tapeScroll {
+          from { transform: translateX(0); }
+          to { transform: translateX(-33.33%); }
+        }
+        @keyframes tapeScrollReverse {
+          from { transform: translateX(-25%); }
+          to { transform: translateX(0); }
+        }
+      `}</style>
+    </section>
+  );
+}
+
+// ============================================================================
+// THE SEAL — sacred geometry composition. Pure visual. Brand flex.
+// ============================================================================
+function TheSeal() {
+  const [hash, setHash] = useState('');
+  const [beamAngle, setBeamAngle] = useState(0);
+  const [reveal, setReveal] = useState(false);
+  const ref = useRef(null);
+  
+  // Generate a fake-looking hash that updates slowly
+  useEffect(() => {
+    const chars = '0123456789abcdef';
+    const gen = () => '0x' + Array.from({ length: 64 }, () => chars[Math.floor(Math.random() * 16)]).join('');
+    setHash(gen());
+    const id = setInterval(() => setHash(gen()), 4000);
+    return () => clearInterval(id);
+  }, []);
+  
+  // Cycle the beam angle every 7 seconds: N → E → S → W
+  useEffect(() => {
+    const id = setInterval(() => setBeamAngle(a => (a + 90) % 360), 7000);
+    return () => clearInterval(id);
+  }, []);
+  
+  // Scroll-trigger reveal
+  useEffect(() => {
+    if (!ref.current) return;
+    const obs = new IntersectionObserver(
+      (entries) => entries.forEach(e => { if (e.isIntersecting) { setReveal(true); obs.unobserve(e.target); } }),
+      { threshold: 0.2 }
+    );
+    obs.observe(ref.current);
+    return () => obs.disconnect();
+  }, []);
+
+  return (
+    <section ref={ref} className="gg-section-pad-xl" style={{ 
+      position: 'relative',
+      padding: '160px 24px 200px',
+      background: 'linear-gradient(180deg, var(--bg) 0%, #050811 50%, var(--bg) 100%)',
+      borderBottom: '1px solid var(--line)',
+      overflow: 'hidden',
+    }}>
+      {/* deep void backdrop with center light */}
+      <div style={{
+        position: 'absolute',
+        inset: 0,
+        background: 'radial-gradient(ellipse 900px 700px at 50% 50%, rgba(107,163,255,0.10) 0%, rgba(159,122,234,0.06) 30%, transparent 65%)',
+        pointerEvents: 'none',
+      }} />
+      
+      {/* Star field — slow drifting points */}
+      <StarField />
+      
+      {/* Eyebrow */}
+      <div style={{
+        textAlign: 'center',
+        marginBottom: 80,
+        opacity: reveal ? 1 : 0,
+        transform: reveal ? 'translateY(0)' : 'translateY(12px)',
+        transition: 'opacity 1200ms ease, transform 1200ms ease',
+      }}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 16 }}>
+          <div style={{ width: 32, height: 1, background: 'linear-gradient(90deg, transparent, var(--acid))' }} />
+          <span style={{ fontSize: 11, color: 'var(--acid)', letterSpacing: '0.18em', fontWeight: 600, textTransform: 'uppercase', fontFamily: 'var(--mono)' }}>The Seal</span>
+          <div style={{ width: 32, height: 1, background: 'linear-gradient(270deg, transparent, var(--acid))' }} />
+        </div>
+      </div>
+
+      {/* Main composition — the geometric mandala */}
+      <SealComposition beamAngle={beamAngle} reveal={reveal} />
+      
+      {/* Inscription below */}
+      <div style={{
+        textAlign: 'center',
+        marginTop: 96,
+        opacity: reveal ? 1 : 0,
+        transition: 'opacity 1600ms ease 800ms',
+      }}>
+        <div className="serif" style={{
+          fontSize: 'clamp(28px, 3.4vw, 44px)',
+          fontStyle: 'italic',
+          fontWeight: 400,
+          color: 'var(--fg)',
+          letterSpacing: '-0.02em',
+          lineHeight: 1.25,
+          maxWidth: 760,
+          margin: '0 auto',
+        }}>
+          Sealed by the chain.<br />
+          Kept by the math.<br />
+          <span style={{ background: 'linear-gradient(120deg, var(--purple-l) 0%, var(--acid) 60%, var(--steel) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Forever.</span>
+        </div>
+        
+        <div style={{ marginTop: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14 }}>
+          <div style={{ width: 48, height: 1, background: 'var(--line-2)' }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--fg-mute)', letterSpacing: '0.15em', fontFamily: 'var(--mono)', fontWeight: 600 }}>
+            <span>GGL</span>
+            <span style={{ color: 'var(--acid)', fontSize: 14 }}>∞</span>
+          </div>
+          <div style={{ width: 48, height: 1, background: 'var(--line-2)' }} />
+        </div>
+      </div>
+
+      {/* Cryptographic hash scrolling at bottom */}
+      <div style={{
+        position: 'absolute',
+        bottom: 24,
+        left: 0,
+        right: 0,
+        textAlign: 'center',
+        fontSize: 10,
+        fontFamily: 'var(--mono)',
+        color: 'var(--fg-mute)',
+        opacity: 0.4,
+        letterSpacing: '0.08em',
+        whiteSpace: 'nowrap',
+        overflow: 'hidden',
+        pointerEvents: 'none',
+      }}>
+        <div style={{ animation: 'sealHashScroll 60s linear infinite' }}>
+          {hash} · vault_pda · {hash} · withdraw_fn::not_implemented · {hash}
+        </div>
+      </div>
+      
+      <style>{`
+        @keyframes sealHashScroll {
+          from { transform: translateX(0); }
+          to { transform: translateX(-50%); }
+        }
+        @keyframes sealRing1 { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes sealRing2 { from { transform: rotate(360deg); } to { transform: rotate(0deg); } }
+        @keyframes sealRing3 { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes sealBeam {
+          0% { opacity: 0; }
+          15% { opacity: 0.8; }
+          50% { opacity: 0.4; }
+          85% { opacity: 0.6; }
+          100% { opacity: 0; }
+        }
+        @keyframes sealParticleIn {
+          from { opacity: 0; transform: translate(var(--start-x), var(--start-y)) scale(0.2); }
+          50% { opacity: 1; }
+          to { opacity: 0; transform: translate(0, 0) scale(0); }
+        }
+        @keyframes starDrift {
+          from { transform: translateY(0); opacity: var(--star-opacity, 0.4); }
+          50% { opacity: 0.8; }
+          to { transform: translateY(-40px); opacity: 0; }
+        }
+      `}</style>
+    </section>
+  );
+}
+
+// Sacred geometry mandala built around a vault
+function SealComposition({ beamAngle, reveal }) {
+  return (
+    <div className="gg-resp-seal-wrap" style={{
+      position: 'relative',
+      width: 640,
+      maxWidth: '100%',
+      height: 640,
+      margin: '0 auto',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+    }}>
+      {/* Soft outer glow */}
+      <div style={{
+        position: 'absolute',
+        inset: 0,
+        background: 'radial-gradient(circle at center, rgba(107,163,255,0.12) 0%, rgba(159,122,234,0.08) 25%, transparent 55%)',
+        filter: 'blur(40px)',
+        opacity: reveal ? 1 : 0,
+        transition: 'opacity 1800ms ease 200ms',
+      }} />
+
+      {/* OUTER RING — 12-pointed star, slow rotate */}
+      <svg viewBox="0 0 640 640" style={{
+        position: 'absolute',
+        inset: 0,
+        width: '100%',
+        height: '100%',
+        animation: 'sealRing1 240s linear infinite',
+        opacity: reveal ? 0.7 : 0,
+        transition: 'opacity 1800ms ease 400ms',
+      }}>
+        <defs>
+          <linearGradient id="seal-grad-outer" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#9f7aea" stopOpacity="0.6" />
+            <stop offset="50%" stopColor="#6ba3ff" stopOpacity="0.8" />
+            <stop offset="100%" stopColor="#5a8dd6" stopOpacity="0.6" />
+          </linearGradient>
+        </defs>
+        {/* 12-point star ring */}
+        <g transform="translate(320 320)">
+          {Array.from({ length: 12 }).map((_, i) => {
+            const a = (Math.PI * 2 / 12) * i;
+            const x1 = Math.cos(a) * 280;
+            const y1 = Math.sin(a) * 280;
+            const x2 = Math.cos(a + Math.PI / 12) * 295;
+            const y2 = Math.sin(a + Math.PI / 12) * 295;
+            return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="url(#seal-grad-outer)" strokeWidth="0.6" />;
+          })}
+          <circle r="280" fill="none" stroke="url(#seal-grad-outer)" strokeWidth="0.4" strokeDasharray="1 4" />
+          {/* 12 nodes at the cardinal points */}
+          {Array.from({ length: 12 }).map((_, i) => {
+            const a = (Math.PI * 2 / 12) * i - Math.PI / 2;
+            const x = Math.cos(a) * 290;
+            const y = Math.sin(a) * 290;
+            const major = i % 3 === 0;
+            return <circle key={i} cx={x} cy={y} r={major ? 2.5 : 1.2} fill={major ? '#6ba3ff' : '#9f7aea'} opacity={major ? 0.9 : 0.5} />;
+          })}
+        </g>
+      </svg>
+
+      {/* MID RING — hexagonal lattice, counter-rotate */}
+      <svg viewBox="0 0 640 640" style={{
+        position: 'absolute',
+        inset: 0,
+        width: '100%',
+        height: '100%',
+        animation: 'sealRing2 180s linear infinite',
+        opacity: reveal ? 0.5 : 0,
+        transition: 'opacity 1800ms ease 600ms',
+      }}>
+        <g transform="translate(320 320)">
+          {/* Inner ornamental hexagon ring */}
+          {Array.from({ length: 6 }).map((_, i) => {
+            const a = (Math.PI / 3) * i - Math.PI / 2;
+            const x1 = Math.cos(a) * 220;
+            const y1 = Math.sin(a) * 220;
+            const a2 = (Math.PI / 3) * (i + 1) - Math.PI / 2;
+            const x2 = Math.cos(a2) * 220;
+            const y2 = Math.sin(a2) * 220;
+            return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="#6ba3ff" strokeWidth="0.5" opacity="0.8" />;
+          })}
+          {/* Triangular subdivisions */}
+          {Array.from({ length: 6 }).map((_, i) => {
+            const a = (Math.PI / 3) * i - Math.PI / 2;
+            const x = Math.cos(a) * 220;
+            const y = Math.sin(a) * 220;
+            return <line key={i} x1="0" y1="0" x2={x} y2={y} stroke="#9f7aea" strokeWidth="0.3" opacity="0.4" />;
+          })}
+          <circle r="220" fill="none" stroke="#6ba3ff" strokeWidth="0.3" opacity="0.3" />
+          {/* Decorative dots at vertices */}
+          {Array.from({ length: 6 }).map((_, i) => {
+            const a = (Math.PI / 3) * i - Math.PI / 2;
+            const x = Math.cos(a) * 220;
+            const y = Math.sin(a) * 220;
+            return <circle key={i} cx={x} cy={y} r="3" fill="#9f7aea" opacity="0.7" />;
+          })}
+        </g>
+      </svg>
+
+      {/* INNER RING — fine ornamental ticks, faster rotation */}
+      <svg viewBox="0 0 640 640" style={{
+        position: 'absolute',
+        inset: 0,
+        width: '100%',
+        height: '100%',
+        animation: 'sealRing3 90s linear infinite',
+        opacity: reveal ? 0.6 : 0,
+        transition: 'opacity 1800ms ease 800ms',
+      }}>
+        <g transform="translate(320 320)">
+          <circle r="160" fill="none" stroke="#6ba3ff" strokeWidth="0.4" opacity="0.4" />
+          {/* 60 tick marks like a chronograph */}
+          {Array.from({ length: 60 }).map((_, i) => {
+            const a = (Math.PI * 2 / 60) * i;
+            const inner = i % 5 === 0 ? 152 : 156;
+            const outer = 160;
+            const x1 = Math.cos(a) * inner;
+            const y1 = Math.sin(a) * inner;
+            const x2 = Math.cos(a) * outer;
+            const y2 = Math.sin(a) * outer;
+            return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke={i % 5 === 0 ? '#6ba3ff' : '#9f7aea'} strokeWidth={i % 5 === 0 ? 0.8 : 0.4} opacity={i % 5 === 0 ? 0.9 : 0.4} />;
+          })}
+        </g>
+      </svg>
+
+      {/* Cardinal axis lines — connect vault center to ring edges */}
+      <svg viewBox="0 0 640 640" style={{
+        position: 'absolute',
+        inset: 0,
+        width: '100%',
+        height: '100%',
+        opacity: reveal ? 1 : 0,
+        transition: 'opacity 1600ms ease 1000ms',
+      }}>
+        <g transform="translate(320 320)">
+          {[0, 90, 180, 270].map(deg => {
+            const a = (deg * Math.PI / 180) - Math.PI / 2;
+            const x = Math.cos(a) * 280;
+            const y = Math.sin(a) * 280;
+            return (
+              <line key={deg} x1="0" y1="0" x2={x} y2={y} stroke="#6ba3ff" strokeWidth="0.4" opacity="0.2" strokeDasharray="2 6" />
+            );
+          })}
+        </g>
+      </svg>
+
+      {/* Light beam — sweeps every 7 seconds */}
+      <div style={{
+        position: 'absolute',
+        top: '50%',
+        left: '50%',
+        width: 2,
+        height: 280,
+        background: 'linear-gradient(180deg, transparent 0%, rgba(107,163,255,0.6) 30%, rgba(107,163,255,0.9) 50%, rgba(107,163,255,0.6) 70%, transparent 100%)',
+        boxShadow: '0 0 20px rgba(107,163,255,0.6), 0 0 40px rgba(107,163,255,0.3)',
+        transformOrigin: 'top center',
+        transform: `translate(-50%, 0) rotate(${beamAngle}deg)`,
+        transition: 'transform 1400ms cubic-bezier(0.4, 0, 0.2, 1)',
+        animation: 'sealBeam 7s linear infinite',
+        pointerEvents: 'none',
+        marginTop: -140,
+      }} />
+
+      {/* Inflowing particles — drawn toward vault from the cardinal directions */}
+      <SealParticles reveal={reveal} />
+
+      {/* THE VAULT at center — large, sealed, breathing */}
+      <div style={{
+        position: 'relative',
+        zIndex: 5,
+        opacity: reveal ? 1 : 0,
+        transform: reveal ? 'scale(1)' : 'scale(0.9)',
+        transition: 'opacity 1800ms cubic-bezier(0.2, 0.8, 0.2, 1) 400ms, transform 1800ms cubic-bezier(0.2, 0.8, 0.2, 1) 400ms',
+      }}>
+        <Vault size={200} state="sealed" fillPct={100} animate={true} breathe={true} scanline={true} />
+      </div>
+
+      {/* Halo glow behind vault */}
+      <div style={{
+        position: 'absolute',
+        width: 280,
+        height: 280,
+        borderRadius: '50%',
+        background: 'radial-gradient(circle, rgba(107,163,255,0.18) 0%, rgba(159,122,234,0.10) 40%, transparent 70%)',
+        filter: 'blur(20px)',
+        zIndex: 1,
+        opacity: reveal ? 1 : 0,
+        transition: 'opacity 1800ms ease 600ms',
+      }} />
+    </div>
+  );
+}
+
+// Star field — drifting background dots
+function StarField() {
+  const stars = useMemo(() => {
+    const out = [];
+    for (let i = 0; i < 60; i++) {
+      out.push({
+        left: Math.random() * 100,
+        top: Math.random() * 100,
+        size: Math.random() * 1.5 + 0.5,
+        opacity: Math.random() * 0.5 + 0.2,
+        delay: Math.random() * 8,
+        duration: 6 + Math.random() * 8,
+      });
+    }
+    return out;
+  }, []);
+  
+  return (
+    <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
+      {stars.map((s, i) => (
+        <div key={i} style={{
+          position: 'absolute',
+          left: `${s.left}%`,
+          top: `${s.top}%`,
+          width: s.size,
+          height: s.size,
+          background: i % 5 === 0 ? '#6ba3ff' : '#fff',
+          borderRadius: '50%',
+          opacity: s.opacity,
+          boxShadow: i % 5 === 0 ? '0 0 4px #6ba3ff' : 'none',
+          animation: `starDrift ${s.duration}s linear ${s.delay}s infinite`,
+          '--star-opacity': s.opacity,
+        }} />
+      ))}
+    </div>
+  );
+}
+
+// Particles flowing inward from edges toward the vault
+function SealParticles({ reveal }) {
+  const particles = useMemo(() => {
+    const out = [];
+    for (let i = 0; i < 16; i++) {
+      const angle = (Math.PI * 2 / 16) * i + Math.random() * 0.3;
+      const distance = 280 + Math.random() * 60;
+      out.push({
+        startX: Math.cos(angle) * distance,
+        startY: Math.sin(angle) * distance,
+        delay: Math.random() * 8,
+        duration: 6 + Math.random() * 4,
+      });
+    }
+    return out;
+  }, []);
+  
+  if (!reveal) return null;
+  
+  return (
+    <div style={{ position: 'absolute', top: '50%', left: '50%', width: 0, height: 0, pointerEvents: 'none' }}>
+      {particles.map((p, i) => (
+        <div key={i} style={{
+          position: 'absolute',
+          width: 3,
+          height: 3,
+          borderRadius: '50%',
+          background: i % 3 === 0 ? '#9f7aea' : '#6ba3ff',
+          boxShadow: i % 3 === 0 ? '0 0 8px #9f7aea, 0 0 14px rgba(159,122,234,0.6)' : '0 0 8px #6ba3ff, 0 0 14px rgba(107,163,255,0.6)',
+          animation: `sealParticleIn ${p.duration}s cubic-bezier(0.4, 0, 0.6, 1) ${p.delay}s infinite`,
+          '--start-x': `${p.startX}px`,
+          '--start-y': `${p.startY}px`,
+        }} />
+      ))}
     </div>
   );
 }
