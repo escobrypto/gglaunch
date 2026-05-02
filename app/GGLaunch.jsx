@@ -1,5 +1,3 @@
-'use client';
-
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { TrendingUp, Zap, Shield, ArrowUpRight, Plus, Wallet, Check, X, Search, Activity, Layers, ChevronRight, Copy, ExternalLink, AlertCircle, ArrowRight, AlertTriangle } from 'lucide-react';
@@ -8,15 +6,118 @@ import { TrendingUp, Zap, Shield, ArrowUpRight, Plus, Wallet, Check, X, Search, 
 // SEED DATA
 // ============================================================================
 
-const SEED_TOKENS = [
+// Hand-curated headline tokens (graduated, the demos point at these)
+const HERO_TOKENS = [
   { id: 'wif2', symbol: 'WIF2', name: 'dogwifhat 2.0', creator: '7xK4...3mQ', mcap: 8420000, price: 0.00842, change24h: 142.3, volume24h: 2840000, holders: 8421, graduated: true, lpLocked: 412, feesAccrued: 18420, sealedAt: '2 days ago', progress: 100, image: '🐕', desc: 'The chad has returned. Permanent liquidity, zero rug risk.' },
   { id: 'pepe3', symbol: 'PEPE3', name: 'PEPE Reborn', creator: 'B9k4...zQp', mcap: 4210000, price: 0.0042, change24h: 87.4, volume24h: 1240000, holders: 4892, graduated: true, lpLocked: 218, feesAccrued: 9120, sealedAt: '5 hours ago', progress: 100, image: '🐸', desc: 'Frog season is back.' },
   { id: 'gigachad', symbol: 'CHAD', name: 'GigaChad', creator: '4Hp2...7Lm', mcap: 1840000, price: 0.00184, change24h: 43.2, volume24h: 821000, holders: 2104, graduated: true, lpLocked: 92, feesAccrued: 3240, sealedAt: '1 day ago', progress: 100, image: '💪', desc: 'For the absolute units.' },
-  { id: 'moon42', symbol: 'MOON', name: 'Moon Mission 42', creator: 'X2v8...9Kp', mcap: 41200, price: 0.0000412, change24h: 24.1, volume24h: 18400, holders: 891, graduated: false, lpLocked: 0, feesAccrued: 0, sealedAt: null, progress: 67, image: '🌙', desc: 'Forty-two attempts. This one sticks.' },
-  { id: 'cope', symbol: 'COPE', name: 'Cope Harder', creator: 'M4n3...2Xc', mcap: 18400, price: 0.0000184, change24h: -12.4, volume24h: 8400, holders: 412, graduated: false, lpLocked: 0, feesAccrued: 0, sealedAt: null, progress: 31, image: '😤', desc: 'For when you simply must cope.' },
-  { id: 'banger', symbol: 'BNGR', name: 'Banger', creator: 'Q1w7...8Rt', mcap: 8400, price: 0.0000084, change24h: 312.0, volume24h: 4200, holders: 184, graduated: false, lpLocked: 0, feesAccrued: 0, sealedAt: null, progress: 14, image: '🔥', desc: 'Ship it.' },
-  { id: 'sigma', symbol: 'SIGMA', name: 'Sigma Grindset', creator: 'P3z6...4Yu', mcap: 2100, price: 0.0000021, change24h: 84.2, volume24h: 1200, holders: 92, graduated: false, lpLocked: 0, feesAccrued: 0, sealedAt: null, progress: 4, image: '🗿', desc: 'Rise and grind.' },
 ];
+
+// Procedural token generator — names + emojis pulled from a real memecoin lexicon
+const NAME_PARTS = {
+  prefix: ['Mega', 'Giga', 'Ultra', 'Hyper', 'Turbo', 'Chad', 'Based', 'Sigma', 'Alpha', 'Wojak', 'Anon', 'Degen', 'Floki', 'Bonk', 'Bork', 'Pepe', 'Doge', 'Shib', 'Cat', 'Frog', 'Moon', 'Sun', 'Rocket', 'Diamond', 'Gold', 'Holy', 'Sacred', 'Cosmic', 'Quantum'],
+  noun: ['Coin', 'Inu', 'Cat', 'Frog', 'Doge', 'Pump', 'Bag', 'King', 'Lord', 'God', 'Wizard', 'Apex', 'Bro', 'Anon', 'Vault', 'Chad', 'Banana', 'Mango', 'Grape', 'Cult', 'Tribe', 'Squad', 'Gang', 'Family'],
+  number: ['', '', '', '2', '3', '69', '420', '42', '7', 'X', 'Pro', 'Plus', 'Max'],
+};
+const TICKERS = ['MOG','TURBO','WAGMI','BONK','POPCAT','MEW','BOME','MYRO','SLERF','WEN','GIGA','HARRY','ANALOS','BANANA','MAGA','GME','RETARDIO','NPC','PNUT','GOAT','LUCE','SPX','FARTCOIN','MOODENG','KEKIUS','GRIFFAIN','AI16Z','VIRTUAL','TAI','ARC','BUTTHOLE','MEMES','RFK','TRUMP','VINE','TIBBIR','UFD','SWARMS','ZEREBRO','COOKIE','DOLAN','FWOG','GOAT2','HEGE','HOSICO','HOUSE','JEO','LIBRA','LOWQ','MICHI','MOTHER','NUB','PCHAIN','PNUT2','PONKE','PUPPETS','ROCKY','SAGE','SAMO','SANIC','SCAM','SHILL','SIGMA2','SLOTH','SNEK','SOLID','SOMA','SUSHI','TAIKI','TANK','TINY','TOOLS','TYBG','VINE2','WAFFLES','WALL','WATER','WEED','WORM','XYZ','YOLO','ZOOMER'];
+const EMOJI_POOL = ['🐕','🐸','🦍','🐱','🌙','🔥','💎','🚀','🗿','⚡','👑','🦁','🐺','🦄','🐢','🐰','🦊','🐯','🦅','🐉','🌈','💫','⭐','🎯','💪','🍌','🥭','🍇','🍑','🌶️','🦴','🤡','👹','👺','💀','👽','🤖','🎲','🎰','💰','🪙','📈','🎪','🌊','🍕','🍔','🍩','☄️','🌋','🏔️','🦴','🧠','🦷','👁️','✨','🪞','🔮'];
+const DESCRIPTIONS = ['Built by anons, for anons.', 'No team. No allocation. No rug.', 'Ship it.', 'For the people.', 'The future is here.', 'Number go up.', 'Decentralized memetics.', 'Powered by vibes.', 'Forever, on-chain.', 'This one stays.', 'For the absolute units.', 'Wagmi.', 'It is what it is.', 'Truly unstoppable.', 'Liquidity that stays.', 'No more rugs.', 'Beyond the curve.', 'Holy grail of memes.', 'In math we trust.'];
+
+function rng(seed) {
+  let s = seed * 9301 + 49297;
+  return () => { s = (s * 9301 + 49297) % 233280; return s / 233280; };
+}
+
+function generateTokens(count) {
+  const tokens = [...HERO_TOKENS];
+  const usedTickers = new Set(HERO_TOKENS.map(t => t.symbol));
+  const r = rng(42);
+  
+  for (let i = 0; i < count; i++) {
+    let symbol;
+    if (r() > 0.5 && i < TICKERS.length) {
+      symbol = TICKERS[Math.floor(r() * TICKERS.length)];
+    } else {
+      const p = NAME_PARTS.prefix[Math.floor(r() * NAME_PARTS.prefix.length)];
+      const n = NAME_PARTS.noun[Math.floor(r() * NAME_PARTS.noun.length)];
+      symbol = (p.slice(0, 4) + n.slice(0, 4)).toUpperCase();
+    }
+    if (usedTickers.has(symbol)) symbol += Math.floor(r() * 99);
+    usedTickers.add(symbol);
+    
+    // Long-tail mcap distribution: most tokens are small (on curve), a few are big (graduated)
+    const tier = r();
+    let mcap, graduated, progress, lpLocked, feesAccrued;
+    if (tier > 0.85) {
+      // graduated, mid-cap
+      graduated = true;
+      mcap = 100000 + r() * 2000000;
+      progress = 100;
+      lpLocked = mcap / 18000;
+      feesAccrued = lpLocked * (50 + r() * 200);
+    } else if (tier > 0.5) {
+      // active on curve, decent progress
+      graduated = false;
+      progress = Math.floor(15 + r() * 75);
+      mcap = (progress / 100) * 69000 + r() * 5000;
+      lpLocked = 0;
+      feesAccrued = 0;
+    } else {
+      // baby curve, just launched
+      graduated = false;
+      progress = Math.floor(1 + r() * 25);
+      mcap = (progress / 100) * 69000 + r() * 800;
+      lpLocked = 0;
+      feesAccrued = 0;
+    }
+    
+    const price = mcap / 1_000_000_000;
+    const change24h = graduated ? -50 + r() * 200 : -30 + r() * 400;
+    const volume24h = mcap * (0.05 + r() * 0.6);
+    const holders = Math.floor(graduated ? 100 + r() * 8000 : 5 + r() * 800);
+    
+    const sealedHours = graduated ? Math.floor(r() * 168) : null;
+    const sealedAt = sealedHours === null ? null :
+      sealedHours < 1 ? 'just now' :
+      sealedHours < 24 ? `${sealedHours}h ago` :
+      `${Math.floor(sealedHours / 24)}d ago`;
+    
+    const launchedMin = Math.floor(r() * (graduated ? 10080 : 1440));
+    const launched = launchedMin < 60 ? `${launchedMin}m ago` :
+      launchedMin < 1440 ? `${Math.floor(launchedMin / 60)}h ago` :
+      `${Math.floor(launchedMin / 1440)}d ago`;
+    
+    const namePrefix = NAME_PARTS.prefix[Math.floor(r() * NAME_PARTS.prefix.length)];
+    const nameNoun = NAME_PARTS.noun[Math.floor(r() * NAME_PARTS.noun.length)];
+    const nameNum = NAME_PARTS.number[Math.floor(r() * NAME_PARTS.number.length)];
+    const name = `${namePrefix} ${nameNoun}${nameNum ? ' ' + nameNum : ''}`;
+    
+    const creator = (Math.random().toString(36).slice(2, 6) + Math.random().toString(36).slice(2, 6) + 'qx').slice(0, 4) + '...' + (Math.random().toString(36).slice(2, 6)).slice(0, 3);
+    
+    tokens.push({
+      id: symbol.toLowerCase() + '_' + i,
+      symbol,
+      name,
+      creator,
+      mcap,
+      price,
+      change24h,
+      volume24h,
+      holders,
+      graduated,
+      lpLocked,
+      feesAccrued,
+      sealedAt,
+      launched,
+      progress,
+      image: EMOJI_POOL[Math.floor(r() * EMOJI_POOL.length)],
+      desc: DESCRIPTIONS[Math.floor(r() * DESCRIPTIONS.length)],
+    });
+  }
+  return tokens;
+}
+
+const SEED_TOKENS = generateTokens(82);
 
 // ============================================================================
 // HELPERS
@@ -213,8 +314,8 @@ export default function GGLaunch() {
     { tokenId: 'pepe3', gLPAmount: 412, baseValue: 1.8, currentValue: 2.41, apr: 87.4, fees24h: 0.021 },
   ]);
   const [holdings, setHoldings] = useState({ moon42: 184000, cope: 92000 });
-  const [tvl, setTvl] = useState(8421042);
-  const [feesGenerated, setFeesGenerated] = useState(184293);
+  const [tvl, setTvl] = useState(34_842_193);
+  const [feesGenerated, setFeesGenerated] = useState(842_193);
   const [toast, setToast] = useState(null);
   const [paletteOpen, setPaletteOpen] = useState(false);
 
@@ -894,7 +995,7 @@ function HomePage({ navigate, tokens, tvl, feesGenerated }) {
   
   return (
     <div className="gg-fade-in">
-      <Hero navigate={navigate} tvl={tvl} feesGenerated={feesGenerated} />
+      <Hero navigate={navigate} tvl={tvl} feesGenerated={feesGenerated} tokens={tokens} />
       <Reveal><MechanismFlow /></Reveal>
       <Reveal><ComparisonFlow /></Reveal>
       <Manifesto />
@@ -938,15 +1039,15 @@ function FloatingVault() {
   );
 }
 
-// HERO — split: copy on left, gigantic interactive vault on right
-function Hero({ navigate, tvl, feesGenerated }) {
+// HERO — bespoke instrument composition: copy left, vault inside instrument bezel right
+function Hero({ navigate, tvl, feesGenerated, tokens }) {
   return (
     <section style={{ position: 'relative', overflow: 'hidden', borderBottom: '1px solid var(--line)' }}>
       {/* atmospheric backdrop */}
       <div style={{ position: 'absolute', top: '-20%', right: '-10%', width: 900, height: 900, background: 'radial-gradient(circle, rgba(107,163,255,0.10) 0%, rgba(159,122,234,0.05) 40%, transparent 70%)', filter: 'blur(80px)', pointerEvents: 'none' }} />
       <div className="gg-grid" style={{ position: 'absolute', inset: 0, opacity: 0.18, maskImage: 'radial-gradient(ellipse at center, black 0%, transparent 80%)' }} />
       
-      <div style={{ maxWidth: 1400, margin: '0 auto', padding: '64px 24px 80px', position: 'relative', display: 'grid', gridTemplateColumns: '1fr 580px', gap: 64, alignItems: 'center', minHeight: 720 }}>
+      <div style={{ maxWidth: 1400, margin: '0 auto', padding: '64px 24px 0', position: 'relative', display: 'grid', gridTemplateColumns: '1fr 620px', gap: 48, alignItems: 'center', minHeight: 720 }}>
         {/* LEFT: copy */}
         <div className="gg-rise">
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 56, padding: '6px 12px', background: 'rgba(11,15,28,0.5)', border: '1px solid var(--line-2)', width: 'fit-content', boxShadow: 'var(--hairline-top)' }}>
@@ -975,23 +1076,256 @@ function Hero({ navigate, tvl, feesGenerated }) {
             </button>
           </div>
 
-          {/* live counter strip */}
-          <div style={{ marginTop: 56, display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 0, border: '1px solid var(--line-2)', maxWidth: 480 }}>
-            <MicroStat label="Sealed in vaults" value={<><CountUp to={tvl} formatter={v => `$${fmt(v, 1)}`} /></>} accent />
-            <MicroStat label="Fees compounded" value={<><CountUp to={feesGenerated} formatter={v => `$${fmt(v, 0)}`} /></>} />
+          {/* live counter strip — now 4-up with vault count + active */}
+          <div style={{ marginTop: 56, display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 0, border: '1px solid var(--line-2)', maxWidth: 580 }}>
+            <MicroStat label="Sealed" value={<CountUp to={tvl} formatter={v => `$${fmt(v, 1)}`} />} accent />
+            <MicroStat label="Fees" value={<CountUp to={feesGenerated} formatter={v => `$${fmt(v, 0)}`} />} />
+            <MicroStat label="Vaults" value={tokens.filter(t => t.graduated).length} />
+            <MicroStat label="On curve" value={tokens.filter(t => !t.graduated).length} />
           </div>
         </div>
 
-        {/* RIGHT: the giant vault */}
-        <div style={{ position: 'relative', height: 580, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        {/* RIGHT: the giant vault inside instrument bezel */}
+        <div style={{ position: 'relative', height: 620, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <HeroVault />
         </div>
       </div>
+
+      {/* LIVE ACTIVITY TICKER */}
+      <ActivityTicker tokens={tokens} />
+
+      {/* GRADUATING NOW STRIP */}
+      <GraduatingNow tokens={tokens} navigate={navigate} />
     </section>
   );
 }
 
+// Live activity ticker - protocol events scrolling across a strip
+function ActivityTicker({ tokens }) {
+  const events = useMemo(() => {
+    const out = [];
+    const graduated = tokens.filter(t => t.graduated);
+    const oncurve = tokens.filter(t => !t.graduated && t.progress > 50);
+    
+    for (let i = 0; i < 14; i++) {
+      const r = Math.random();
+      if (r > 0.7 && graduated.length > 0) {
+        const t = graduated[Math.floor(Math.random() * graduated.length)];
+        out.push({ kind: 'sealed', token: t, mins: Math.floor(Math.random() * 240) });
+      } else if (r > 0.45 && graduated.length > 0) {
+        const t = graduated[Math.floor(Math.random() * graduated.length)];
+        out.push({ kind: 'fees', token: t, amount: 8 + Math.random() * 240 });
+      } else if (r > 0.2 && oncurve.length > 0) {
+        const t = oncurve[Math.floor(Math.random() * oncurve.length)];
+        out.push({ kind: 'progress', token: t });
+      } else {
+        const t = tokens[Math.floor(Math.random() * tokens.length)];
+        out.push({ kind: 'buy', token: t, amount: 0.1 + Math.random() * 8 });
+      }
+    }
+    return out;
+  }, [tokens]);
+
+  return (
+    <div style={{ position: 'relative', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', background: 'linear-gradient(180deg, rgba(11,15,28,0.6) 0%, rgba(11,15,28,0.4) 100%)', overflow: 'hidden', height: 56, display: 'flex', alignItems: 'center', marginTop: 64 }}>
+      <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 100, background: 'linear-gradient(90deg, var(--bg) 0%, transparent 100%)', zIndex: 2, pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 100, background: 'linear-gradient(270deg, var(--bg) 0%, transparent 100%)', zIndex: 2, pointerEvents: 'none' }} />
+      
+      <div style={{ position: 'absolute', left: 24, top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', gap: 8, zIndex: 3, padding: '6px 12px', background: 'var(--bg)', border: '1px solid var(--line-2)', boxShadow: 'var(--hairline-top)' }}>
+        <div className="gg-led gg-pulse" style={{ color: 'var(--acid)', width: 5, height: 5 }} />
+        <span style={{ fontSize: 10, color: 'var(--fg-dim)', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Activity</span>
+      </div>
+      
+      <div style={{ display: 'flex', gap: 32, animation: 'tickerScroll 80s linear infinite', whiteSpace: 'nowrap', paddingLeft: 160 }}>
+        {[...events, ...events, ...events].map((e, i) => <ActivityEvent key={i} event={e} />)}
+      </div>
+      
+      <style>{`
+        @keyframes tickerScroll {
+          from { transform: translateX(0); }
+          to { transform: translateX(-33.33%); }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+function ActivityEvent({ event }) {
+  const t = event.token;
+  if (event.kind === 'sealed') {
+    return (
+      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, fontSize: 12 }}>
+        <Vault size={20} state="sealed" fillPct={100} animate={false} glow={false} />
+        <span style={{ color: 'var(--fg)', fontWeight: 600 }}>{t.symbol}</span>
+        <span style={{ color: 'var(--fg-dim)' }}>vault sealed ·</span>
+        <span style={{ color: 'var(--acid)', fontFamily: 'var(--mono)', fontWeight: 500 }}>{fmt(t.lpLocked, 0)} SOL locked</span>
+        <span style={{ color: 'var(--fg-mute)' }}>· {event.mins}m ago</span>
+      </div>
+    );
+  }
+  if (event.kind === 'fees') {
+    return (
+      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, fontSize: 12 }}>
+        <span style={{ color: 'var(--purple-l)' }}>◆</span>
+        <span style={{ color: 'var(--fg)', fontWeight: 600 }}>{t.symbol}</span>
+        <span style={{ color: 'var(--fg-dim)' }}>fees compounded ·</span>
+        <span style={{ color: 'var(--green)', fontFamily: 'var(--mono)', fontWeight: 500 }}>+${fmt(event.amount, 0)}</span>
+      </div>
+    );
+  }
+  if (event.kind === 'progress') {
+    return (
+      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, fontSize: 12 }}>
+        <Vault size={20} state="open" fillPct={t.progress} animate={false} glow={false} />
+        <span style={{ color: 'var(--fg)', fontWeight: 600 }}>{t.symbol}</span>
+        <span style={{ color: 'var(--fg-dim)' }}>curve at</span>
+        <span style={{ color: 'var(--amber)', fontFamily: 'var(--mono)', fontWeight: 500 }}>{t.progress}%</span>
+      </div>
+    );
+  }
+  if (event.kind === 'buy') {
+    return (
+      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, fontSize: 12 }}>
+        <span style={{ color: 'var(--green)', fontFamily: 'var(--mono)', fontWeight: 600 }}>BUY</span>
+        <span style={{ color: 'var(--fg)', fontWeight: 600 }}>{t.symbol}</span>
+        <span style={{ color: 'var(--fg-dim)' }}>·</span>
+        <span style={{ color: 'var(--fg)', fontFamily: 'var(--mono)', fontWeight: 500 }}>{event.amount.toFixed(2)} SOL</span>
+      </div>
+    );
+  }
+  return null;
+}
+
+// Tokens at 80%+ progress, displayed as a horizontal carousel
+function GraduatingNow({ tokens, navigate }) {
+  const candidates = useMemo(() => {
+    return tokens.filter(t => !t.graduated && t.progress >= 70).sort((a, b) => b.progress - a.progress).slice(0, 5);
+  }, [tokens]);
+  
+  if (candidates.length === 0) return null;
+  
+  return (
+    <div style={{ padding: '32px 24px 56px', borderBottom: '1px solid var(--line)' }}>
+      <div style={{ maxWidth: 1400, margin: '0 auto' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div className="gg-led gg-pulse" style={{ color: 'var(--amber)' }} />
+            <span style={{ fontSize: 11, color: 'var(--amber)', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Graduating Now</span>
+            <span style={{ fontSize: 12, color: 'var(--fg-dim)' }}>· {candidates.length} vaults nearing seal</span>
+          </div>
+          <button onClick={() => navigate('discover')} className="gg-btn" style={{ padding: '8px 14px', fontSize: 12 }}>
+            All vaults <ChevronRight size={12} />
+          </button>
+        </div>
+        
+        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(candidates.length, 5)}, 1fr)`, gap: 12 }}>
+          {candidates.map(t => <GraduatingCard key={t.id} token={t} navigate={navigate} />)}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function GraduatingCard({ token, navigate }) {
+  return (
+    <button
+      onClick={() => navigate('token', token.id)}
+      className="gg-card gg-magnetic"
+      style={{
+        padding: 16,
+        textAlign: 'left',
+        cursor: 'pointer',
+        color: 'var(--fg)',
+        fontFamily: 'var(--sans)',
+        display: 'grid',
+        gridTemplateColumns: 'auto 1fr',
+        gap: 12,
+        alignItems: 'center',
+        transition: 'all 240ms cubic-bezier(0.2, 0.8, 0.2, 1)',
+        position: 'relative',
+        overflow: 'hidden',
+      }}
+      onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--amber)'; }}
+      onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--line-2)'; }}
+    >
+      <Vault size={48} state="open" fillPct={token.progress} animate={true} />
+      <div style={{ minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+          <span style={{ fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>{token.symbol}</span>
+          <span style={{ fontSize: 11, color: 'var(--amber)', fontFamily: 'var(--mono)', fontWeight: 500 }}>{token.progress}%</span>
+        </div>
+        <div style={{ height: 3, background: 'var(--bg-2)', position: 'relative', marginBottom: 4 }}>
+          <div style={{ position: 'absolute', inset: 0, width: `${token.progress}%`, background: 'linear-gradient(90deg, var(--amber) 0%, var(--purple) 100%)', boxShadow: '0 0 6px var(--amber)' }} />
+        </div>
+        <div style={{ fontSize: 11, color: 'var(--fg-dim)', fontFamily: 'var(--mono)' }}>${fmt(token.mcap, 0)} / $69K</div>
+      </div>
+    </button>
+  );
+}
+
 // THE HERO VAULT — interactive centerpiece
+// Small data readout positioned at corners of the hero vault container
+function OrbitalReadout({ position, label, value, active, color }) {
+  const positions = {
+    'top-left':     { top: 32,    left: 24,  textAlign: 'left' },
+    'top-right':    { top: 32,    right: 24, textAlign: 'right' },
+    'bottom-left':  { bottom: 80, left: 24,  textAlign: 'left' },
+    'bottom-right': { bottom: 80, right: 24, textAlign: 'right' },
+  };
+  const pos = positions[position];
+  const isRight = position.includes('right');
+  
+  return (
+    <div style={{ 
+      position: 'absolute', 
+      ...pos,
+      zIndex: 4,
+      animation: 'fadeIn 1200ms ease both',
+      animationDelay: '600ms',
+    }}>
+      <div style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        gap: 8, 
+        flexDirection: isRight ? 'row-reverse' : 'row',
+        marginBottom: 6,
+      }}>
+        <div className={active ? 'gg-led gg-pulse' : 'gg-led'} style={{ color: active ? color : 'var(--fg-mute)', width: 4, height: 4 }} />
+        <div style={{ 
+          fontSize: 10, 
+          color: 'var(--fg-mute)', 
+          fontFamily: 'var(--mono)', 
+          fontWeight: 600, 
+          letterSpacing: '0.08em',
+          textAlign: pos.textAlign,
+        }}>{label}</div>
+      </div>
+      <div key={value} style={{ 
+        fontSize: 16, 
+        fontFamily: 'var(--mono)', 
+        fontWeight: 500, 
+        color: active ? 'var(--fg)' : 'var(--fg-dim)', 
+        letterSpacing: '-0.01em',
+        textAlign: pos.textAlign,
+        animation: 'fadeIn 400ms ease',
+        transition: 'color 800ms',
+      }}>{value}</div>
+      {/* connector line to vault */}
+      <div style={{
+        position: 'absolute',
+        [isRight ? 'right' : 'left']: 0,
+        top: position.startsWith('top') ? 'calc(100% + 8px)' : 'auto',
+        bottom: position.startsWith('bottom') ? 'calc(100% + 8px)' : 'auto',
+        width: 60,
+        height: 1,
+        background: `linear-gradient(${isRight ? '270deg' : '90deg'}, ${color}40 0%, transparent 100%)`,
+        opacity: active ? 1 : 0.3,
+        transition: 'opacity 800ms',
+      }} />
+    </div>
+  );
+}
+
 function HeroVault() {
   const [phase, setPhase] = useState('curve');
   const [fillPct, setFillPct] = useState(20);
@@ -1148,6 +1482,36 @@ function HeroVault() {
           animationDelay: `${i * 0.6}s`,
         }} />
       ))}
+
+      {/* ORBITAL INSTRUMENT READOUTS at cardinal positions */}
+      <OrbitalReadout 
+        position="top-left" 
+        label="LP LOCKED" 
+        value={phase === 'sealed' ? '412.0 SOL' : '—'} 
+        active={phase === 'sealed'} 
+        color={color}
+      />
+      <OrbitalReadout 
+        position="top-right" 
+        label="STATUS" 
+        value={phase === 'curve' ? 'CURVE' : phase === 'sealing' ? 'SEALING' : 'SEALED'} 
+        active={true}
+        color={color}
+      />
+      <OrbitalReadout 
+        position="bottom-left" 
+        label="FILL" 
+        value={`${phase === 'sealed' ? 100 : fillPct}%`} 
+        active={true}
+        color={color}
+      />
+      <OrbitalReadout 
+        position="bottom-right" 
+        label="WITHDRAW FN" 
+        value="NEVER" 
+        active={phase === 'sealed'}
+        color={color}
+      />
 
       {/* THE VAULT */}
       <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
