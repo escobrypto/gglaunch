@@ -3207,7 +3207,7 @@ function TheForge() {
           </h2>
         </div>
         
-        {/* The frame — clean, no chrome */}
+        {/* The frame — atmospheric, gradients painted across */}
         <div style={{ 
           position: 'relative',
           height: 420,
@@ -3216,44 +3216,54 @@ function TheForge() {
           opacity: reveal ? 1 : 0,
           transition: 'opacity 1800ms ease 200ms',
         }}>
-          {/* Trail — delicate ribbon of light */}
+          {/* Ambient atmosphere — warm-cool gradient wash that fills the frame */}
+          <div style={{
+            position: 'absolute',
+            inset: 0,
+            background: phase === 'sealed'
+              ? 'radial-gradient(ellipse 60% 70% at 85% 25%, rgba(107,163,255,0.20) 0%, rgba(159,122,234,0.10) 35%, transparent 70%)'
+              : phase === 'flash'
+              ? 'radial-gradient(ellipse 80% 80% at 85% 25%, rgba(255,255,255,0.18) 0%, rgba(159,122,234,0.18) 30%, rgba(107,163,255,0.08) 55%, transparent 80%)'
+              : 'radial-gradient(ellipse 50% 65% at 12% 80%, rgba(251,191,36,0.10) 0%, rgba(251,191,36,0.04) 30%, transparent 60%), radial-gradient(ellipse 55% 65% at 88% 22%, rgba(159,122,234,0.10) 0%, rgba(107,163,255,0.05) 35%, transparent 65%)',
+            transition: 'background 1800ms ease',
+            pointerEvents: 'none',
+            zIndex: 0,
+          }} />
+          
+          {/* Trail — ribbon of light, multiple glow layers */}
           {trail.length > 1 && phase !== 'fade' && (
-            <svg viewBox="0 0 820 420" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}>
+            <svg viewBox="0 0 820 420" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', zIndex: 1 }}>
               <defs>
                 <linearGradient id="forge-trail-grad" x1="0" y1="1" x2="1" y2="0">
                   <stop offset="0%" stopColor="#fbbf24" stopOpacity="0" />
-                  <stop offset="40%" stopColor="#fbbf24" stopOpacity="0.45" />
-                  <stop offset="100%" stopColor="#9f7aea" stopOpacity="0.85" />
+                  <stop offset="25%" stopColor="#fbbf24" stopOpacity="0.5" />
+                  <stop offset="55%" stopColor="#f97316" stopOpacity="0.7" />
+                  <stop offset="80%" stopColor="#9f7aea" stopOpacity="0.85" />
+                  <stop offset="100%" stopColor="#6ba3ff" stopOpacity="1" />
                 </linearGradient>
-                <filter id="forge-trail-glow">
-                  <feGaussianBlur stdDeviation="1.2" />
+                <filter id="forge-trail-glow-wide" x="-50%" y="-50%" width="200%" height="200%">
+                  <feGaussianBlur stdDeviation="8" />
+                </filter>
+                <filter id="forge-trail-glow-mid" x="-50%" y="-50%" width="200%" height="200%">
+                  <feGaussianBlur stdDeviation="3" />
                 </filter>
               </defs>
-              {/* Soft glow underlay */}
-              <path
-                d={trail.map((p, i) => {
+              {(() => {
+                const pathStr = trail.map((p, i) => {
                   const pos = arcAt(p.t);
                   return `${i === 0 ? 'M' : 'L'} ${(pos.x * 820).toFixed(1)} ${(pos.y * 420).toFixed(1)}`;
-                }).join(' ')}
-                fill="none"
-                stroke="url(#forge-trail-grad)"
-                strokeWidth="3"
-                strokeLinecap="round"
-                opacity="0.35"
-                filter="url(#forge-trail-glow)"
-              />
-              {/* Crisp inner line */}
-              <path
-                d={trail.map((p, i) => {
-                  const pos = arcAt(p.t);
-                  return `${i === 0 ? 'M' : 'L'} ${(pos.x * 820).toFixed(1)} ${(pos.y * 420).toFixed(1)}`;
-                }).join(' ')}
-                fill="none"
-                stroke="url(#forge-trail-grad)"
-                strokeWidth="0.9"
-                strokeLinecap="round"
-                opacity="0.85"
-              />
+                }).join(' ');
+                return (
+                  <>
+                    {/* Widest atmospheric glow */}
+                    <path d={pathStr} fill="none" stroke="url(#forge-trail-grad)" strokeWidth="20" strokeLinecap="round" opacity="0.25" filter="url(#forge-trail-glow-wide)" />
+                    {/* Mid glow */}
+                    <path d={pathStr} fill="none" stroke="url(#forge-trail-grad)" strokeWidth="6" strokeLinecap="round" opacity="0.55" filter="url(#forge-trail-glow-mid)" />
+                    {/* Crisp core line */}
+                    <path d={pathStr} fill="none" stroke="url(#forge-trail-grad)" strokeWidth="1.4" strokeLinecap="round" opacity="0.95" />
+                  </>
+                );
+              })()}
             </svg>
           )}
           
@@ -3266,23 +3276,23 @@ function TheForge() {
               transform: 'translate(-50%, 0)',
               padding: '7px 14px',
               background: 'rgba(74,222,128,0.08)',
-              border: '1px solid rgba(74,222,128,0.30)',
-              backdropFilter: 'blur(6px)',
+              border: '1px solid rgba(74,222,128,0.28)',
+              backdropFilter: 'blur(8px)',
               color: 'var(--green)',
-              fontSize: 13,
+              fontSize: 12,
               fontFamily: 'var(--mono)',
               fontWeight: 500,
-              letterSpacing: '-0.01em',
+              letterSpacing: '0',
               animation: 'forgeBubbleRise 2.2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards',
               pointerEvents: 'none',
-              zIndex: 3,
+              zIndex: 4,
               whiteSpace: 'nowrap',
             }}>
               +${b.amount}
             </div>
           ))}
           
-          {/* Token at its current arc position */}
+          {/* Token — luminous orb of light, color shifts with progress */}
           {(phase === 'appear' || phase === 'buying') && (
             <div style={{
               position: 'absolute',
@@ -3291,45 +3301,85 @@ function TheForge() {
               transform: 'translate(-50%, -50%)',
               animation: phase === 'appear' ? 'forgeTokenAppear 1400ms cubic-bezier(0.2, 0.8, 0.2, 1)' : 'none',
               zIndex: 5,
+              pointerEvents: 'none',
             }}>
-              <div className="gg-token-thumb" style={{ 
-                width: 56, 
-                height: 56, 
-                fontSize: 30,
-                boxShadow: phase === 'buying' 
-                  ? `0 0 30px rgba(251,191,36,${0.3 + tokenT * 0.4}), 0 0 60px rgba(251,191,36,${0.15 + tokenT * 0.2})` 
-                  : '0 0 20px rgba(251,191,36,0.25)',
-                transition: 'box-shadow 1200ms',
-              }}>🐕</div>
+              {/* Outermost atmospheric glow */}
+              <div style={{
+                position: 'absolute',
+                top: '50%', left: '50%',
+                width: 220 - tokenT * 30, 
+                height: 220 - tokenT * 30,
+                marginLeft: -(110 - tokenT * 15),
+                marginTop: -(110 - tokenT * 15),
+                borderRadius: '50%',
+                background: `radial-gradient(circle, ${tokenT < 0.5 ? 'rgba(251,191,36,0.20)' : 'rgba(159,122,234,0.20)'} 0%, transparent 70%)`,
+                filter: 'blur(20px)',
+                transition: 'background 800ms',
+              }} />
+              {/* Mid glow */}
+              <div style={{
+                position: 'absolute',
+                top: '50%', left: '50%',
+                width: 90, height: 90,
+                marginLeft: -45, marginTop: -45,
+                borderRadius: '50%',
+                background: `radial-gradient(circle, ${tokenT < 0.4 ? 'rgba(251,191,36,0.55)' : tokenT < 0.7 ? 'rgba(247,115,22,0.55)' : 'rgba(159,122,234,0.55)'} 0%, transparent 70%)`,
+                filter: 'blur(8px)',
+                transition: 'background 600ms',
+              }} />
+              {/* Bright core */}
+              <div style={{
+                position: 'relative',
+                width: 18, height: 18,
+                borderRadius: '50%',
+                background: `radial-gradient(circle, #fff 0%, ${tokenT < 0.4 ? '#fbbf24' : tokenT < 0.7 ? '#f97316' : '#c084fc'} 60%, ${tokenT < 0.4 ? '#f97316' : tokenT < 0.7 ? '#9f7aea' : '#6ba3ff'} 100%)`,
+                boxShadow: '0 0 12px rgba(255,255,255,0.6)',
+                transition: 'background 600ms',
+              }} />
             </div>
           )}
           
-          {/* The held flash — graduation moment */}
+          {/* Graduation flash — bigger, softer, blooms across the frame */}
           {phase === 'flash' && (
             <>
-              {/* Outer expanding ring */}
+              {/* Massive ambient bloom */}
               <div style={{
                 position: 'absolute',
                 left: `${endX * 100}%`,
                 top: `${endY * 100 - 6}%`,
-                width: 280, height: 280,
-                marginLeft: -140, marginTop: -140,
+                width: 700, height: 700,
+                marginLeft: -350, marginTop: -350,
                 borderRadius: '50%',
-                background: 'radial-gradient(circle, #fff 0%, rgba(159,122,234,0.5) 30%, transparent 70%)',
+                background: 'radial-gradient(circle, rgba(255,255,255,0.25) 0%, rgba(159,122,234,0.18) 25%, rgba(107,163,255,0.10) 50%, transparent 75%)',
+                animation: 'forgeFlashBloom 1500ms ease-out forwards',
+                pointerEvents: 'none',
+                mixBlendMode: 'screen',
+                filter: 'blur(20px)',
+                zIndex: 3,
+              }} />
+              {/* Mid ring */}
+              <div style={{
+                position: 'absolute',
+                left: `${endX * 100}%`,
+                top: `${endY * 100 - 6}%`,
+                width: 320, height: 320,
+                marginLeft: -160, marginTop: -160,
+                borderRadius: '50%',
+                background: 'radial-gradient(circle, #fff 0%, rgba(192,132,252,0.7) 25%, rgba(159,122,234,0.4) 50%, transparent 75%)',
                 animation: 'forgeFlashHold 1500ms ease-out forwards',
                 pointerEvents: 'none',
                 mixBlendMode: 'screen',
                 zIndex: 4,
               }} />
-              {/* Bright core that holds */}
+              {/* Bright core */}
               <div style={{
                 position: 'absolute',
                 left: `${endX * 100}%`,
                 top: `${endY * 100 - 6}%`,
-                width: 80, height: 80,
-                marginLeft: -40, marginTop: -40,
+                width: 100, height: 100,
+                marginLeft: -50, marginTop: -50,
                 borderRadius: '50%',
-                background: 'radial-gradient(circle, #fff 0%, rgba(255,255,255,0.6) 40%, transparent 70%)',
+                background: 'radial-gradient(circle, #fff 0%, rgba(255,255,255,0.7) 40%, transparent 70%)',
                 animation: 'forgeCoreHold 1500ms ease-out forwards',
                 pointerEvents: 'none',
                 zIndex: 5,
@@ -3337,18 +3387,34 @@ function TheForge() {
             </>
           )}
           
-          {/* The sealed vault — emerges from where the flash was */}
+          {/* The sealed vault — emerges from the gradient bloom */}
           {phase === 'sealed' && (
-            <div style={{
-              position: 'absolute',
-              left: `${endX * 100}%`,
-              top: `${endY * 100 - 6}%`,
-              transform: 'translate(-50%, -50%)',
-              animation: 'forgeVaultEmerge 1600ms cubic-bezier(0.2, 0.8, 0.2, 1)',
-              zIndex: 5,
-            }}>
-              <Vault size={88} state="sealed" fillPct={100} animate={true} breathe={true} />
-            </div>
+            <>
+              {/* Halo behind vault */}
+              <div style={{
+                position: 'absolute',
+                left: `${endX * 100}%`,
+                top: `${endY * 100 - 6}%`,
+                width: 280, height: 280,
+                marginLeft: -140, marginTop: -140,
+                borderRadius: '50%',
+                background: 'radial-gradient(circle, rgba(107,163,255,0.20) 0%, rgba(159,122,234,0.10) 40%, transparent 70%)',
+                filter: 'blur(20px)',
+                animation: 'forgeVaultHalo 1600ms cubic-bezier(0.2, 0.8, 0.2, 1)',
+                pointerEvents: 'none',
+                zIndex: 4,
+              }} />
+              <div style={{
+                position: 'absolute',
+                left: `${endX * 100}%`,
+                top: `${endY * 100 - 6}%`,
+                transform: 'translate(-50%, -50%)',
+                animation: 'forgeVaultEmerge 1600ms cubic-bezier(0.2, 0.8, 0.2, 1)',
+                zIndex: 5,
+              }}>
+                <Vault size={88} state="sealed" fillPct={100} animate={true} breathe={true} />
+              </div>
+            </>
           )}
           
           {/* Fade overlay during reset */}
@@ -3416,6 +3482,16 @@ function TheForge() {
           25% { opacity: 1; transform: scale(1); }
           75% { opacity: 0.9; transform: scale(1.1); }
           100% { opacity: 0; transform: scale(1.6); }
+        }
+        @keyframes forgeFlashBloom {
+          0% { opacity: 0; transform: scale(0.4); }
+          30% { opacity: 1; transform: scale(1); }
+          100% { opacity: 0; transform: scale(1.4); }
+        }
+        @keyframes forgeVaultHalo {
+          0% { opacity: 0; transform: scale(0.5); }
+          50% { opacity: 1; transform: scale(1); }
+          100% { opacity: 0.7; transform: scale(1); }
         }
         @keyframes forgeCoreHold {
           0% { opacity: 0; transform: scale(0.2); }
