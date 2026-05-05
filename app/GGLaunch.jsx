@@ -178,7 +178,7 @@ function Vault({ size = 64, state = 'sealed', fillPct = 100, glow = true, animat
     const tick = (now) => {
       const t = (now - start) / 1000;
       setWavePhase(t);
-      if (breathe) setBreathePulse(Math.sin(t * 1.2) * 1.5);
+      if (breathe) setBreathePulse(Math.sin(t * 1.6) * 1.5);
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
@@ -451,6 +451,17 @@ function Styles() {
         --hairline-top: inset 0 1px 0 rgba(255,255,255,0.04);
         --hairline-bottom: inset 0 -1px 0 rgba(0,0,0,0.4);
         --hairline-both: inset 0 1px 0 rgba(255,255,255,0.04), inset 0 -1px 0 rgba(0,0,0,0.4);
+        
+        /* Motion design tokens — crisp, snappy, confident */
+        --ease-snap: cubic-bezier(0.16, 1, 0.3, 1);          /* out-expo: arrives fast, settles clean */
+        --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);     /* slight overshoot for confident UI */
+        --ease-quart: cubic-bezier(0.76, 0, 0.24, 1);        /* in-out-quart for transitions */
+        --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);          /* legacy luxe */
+        --t-instant: 80ms;
+        --t-fast: 140ms;
+        --t-base: 220ms;
+        --t-medium: 360ms;
+        --t-slow: 600ms;
       }
       * { box-sizing: border-box; }
       *:focus { outline: none; }
@@ -530,7 +541,7 @@ function Styles() {
         background: linear-gradient(180deg, var(--bg-2) 0%, var(--bg-1) 100%);
         color: var(--fg);
         cursor: pointer;
-        transition: all 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
+        transition: transform 140ms var(--ease-spring), background 140ms var(--ease-snap), border-color 140ms var(--ease-snap), box-shadow 140ms var(--ease-snap);
         border-radius: 0;
         box-shadow: var(--hairline-top), var(--shadow-sm);
         overflow: hidden;
@@ -542,7 +553,7 @@ function Styles() {
         background: linear-gradient(180deg, rgba(255,255,255,0.04) 0%, transparent 50%);
         pointer-events: none;
         opacity: 0;
-        transition: opacity 200ms;
+        transition: opacity 120ms var(--ease-snap);
       }
       .gg-btn:hover { 
         border-color: var(--fg-dim); 
@@ -552,8 +563,9 @@ function Styles() {
       }
       .gg-btn:hover::before { opacity: 1; }
       .gg-btn:active { 
-        transform: translateY(0); 
-        box-shadow: var(--hairline-top), var(--shadow-sm), inset 0 1px 4px rgba(0,0,0,0.3); 
+        transform: translateY(1px) scale(0.985); 
+        transition-duration: 60ms;
+        box-shadow: var(--hairline-top), inset 0 1px 4px rgba(0,0,0,0.4); 
       }
       
       .gg-btn-primary {
@@ -576,7 +588,7 @@ function Styles() {
         background: radial-gradient(120px circle at var(--mx, 50%) var(--my, 50%), rgba(255,255,255,0.35) 0%, transparent 60%);
         pointer-events: none;
         opacity: 0;
-        transition: opacity 240ms;
+        transition: opacity 120ms var(--ease-snap);
       }
       .gg-btn-primary:hover::after { opacity: 1; }
       .gg-btn-primary:hover { 
@@ -729,20 +741,20 @@ function Styles() {
       @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
       
       .gg-fade-in { animation: fadeIn 600ms ease both; }
-      @keyframes fadeIn { from {opacity:0; transform:translateY(8px)} to {opacity:1; transform:translateY(0)} }
+      @keyframes fadeIn { from {opacity:0; transform:translateY(6px)} to {opacity:1; transform:translateY(0)} }
       
-      .gg-rise { animation: rise 1200ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
-      @keyframes rise { from {opacity:0; transform:translateY(24px)} to {opacity:1; transform:translateY(0)} }
+      .gg-rise { animation: rise 700ms var(--ease-snap) both; }
+      @keyframes rise { from {opacity:0; transform:translateY(20px)} to {opacity:1; transform:translateY(0)} }
       
       /* Page enter */
-      .gg-page-enter { animation: pageEnter 400ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+      .gg-page-enter { animation: pageEnter 320ms var(--ease-snap) both; }
       @keyframes pageEnter {
-        from { opacity: 0; transform: translateY(12px); filter: blur(6px); }
+        from { opacity: 0; transform: translateY(10px); filter: blur(4px); }
         to { opacity: 1; transform: translateY(0); filter: blur(0); }
       }
       
       .gg-stagger > * {
-        animation: rise 900ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+        animation: rise 600ms var(--ease-snap) both;
       }
       .gg-stagger > *:nth-child(1) { animation-delay: 0ms; }
       .gg-stagger > *:nth-child(2) { animation-delay: 80ms; }
@@ -1267,7 +1279,7 @@ function Nav({ page, navigate, walletConnected, connectWallet, walletAddr, solBa
         
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12 }}>
           {/* Search hint - hidden on mobile */}
-          <button className="gg-nav-search-hint" onClick={() => { window.dispatchEvent(new CustomEvent('gg-open-palette')); }} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', border: '1px solid var(--line-2)', background: 'rgba(11,15,28,0.5)', cursor: 'pointer', transition: 'all 200ms', fontFamily: 'var(--sans)' }}
+          <button className="gg-nav-search-hint" onClick={() => { window.dispatchEvent(new CustomEvent('gg-open-palette')); }} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', border: '1px solid var(--line-2)', background: 'rgba(11,15,28,0.5)', cursor: 'pointer', transition: 'all 120ms var(--ease-snap)', fontFamily: 'var(--sans)' }}
             onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--fg-mute)'; e.currentTarget.style.background = 'var(--bg-2)'; }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--line-2)'; e.currentTarget.style.background = 'rgba(11,15,28,0.5)'; }}>
             <Search size={12} color="var(--fg-mute)" />
@@ -1397,7 +1409,7 @@ function Reveal({ children, delay = 0 }) {
           }
         });
       },
-      { threshold: 0.15, rootMargin: '0px 0px -80px 0px' }
+      { threshold: 0.08, rootMargin: '0px 0px -40px 0px' }
     );
     observer.observe(ref.current);
     return () => observer.disconnect();
@@ -1406,8 +1418,8 @@ function Reveal({ children, delay = 0 }) {
   return (
     <div ref={ref} style={{
       opacity: visible ? 1 : 0,
-      transform: visible ? 'translateY(0)' : 'translateY(36px)',
-      transition: `opacity 900ms cubic-bezier(0.2, 0.8, 0.2, 1) ${delay}ms, transform 900ms cubic-bezier(0.2, 0.8, 0.2, 1) ${delay}ms`,
+      transform: visible ? 'translateY(0)' : 'translateY(20px)',
+      transition: `opacity 560ms cubic-bezier(0.16, 1, 0.3, 1) ${delay}ms, transform 560ms cubic-bezier(0.16, 1, 0.3, 1) ${delay}ms`,
     }}>
       {children}
     </div>
@@ -1502,7 +1514,7 @@ function Hero({ navigate, tvl, feesGenerated, tokens }) {
           </h1>
 
           <p style={{ marginTop: 36, fontSize: 19, lineHeight: 1.55, color: 'var(--fg-dim)', maxWidth: 540, fontWeight: 400 }}>
-            At graduation, every memecoin's liquidity is sealed in a vault with <span style={{ color: 'var(--fg)', fontWeight: 500 }}>no withdraw function</span>. Not by promise. Not by multisig. By the absence of any code that could remove it.
+            At graduation, every memecoin's liquidity is sealed in a vault with <span style={{ color: 'var(--fg)', fontWeight: 500 }}>no withdraw function</span>. Not the initial pool. Not the re-staked fees. Not any of it. Not by promise — by the absence of any code that could remove it.
           </p>
 
           <div style={{ marginTop: 48, display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -1679,7 +1691,7 @@ function GraduatingCard({ token, navigate }) {
         gridTemplateColumns: 'auto 1fr',
         gap: 12,
         alignItems: 'center',
-        transition: 'all 240ms cubic-bezier(0.2, 0.8, 0.2, 1)',
+        transition: 'all 140ms var(--ease-snap)',
         position: 'relative',
         overflow: 'hidden',
       }}
@@ -1791,36 +1803,35 @@ function HeroVault() {
   useEffect(() => {
     let cancelled = false;
     const seq = async () => {
-      // ACT 1 — THE FILL (~4s): rapid climb 20 → 95
+      // ACT 1 — THE FILL (~3s): rapid confident climb
       for (let i = 20; i <= 95; i += 1) {
         if (cancelled) return;
-        await new Promise(r => setTimeout(r, 50));
+        await new Promise(r => setTimeout(r, 38));
         setFillPct(i);
       }
       if (cancelled) return;
       
-      // ACT 2 — THE THRESHOLD (~1s): brief hold at the brim, tension
-      await new Promise(r => setTimeout(r, 900));
+      // ACT 2 — THE THRESHOLD (~0.6s): held tension
+      await new Promise(r => setTimeout(r, 600));
       if (cancelled) return;
       
-      // ACT 3 — THE SEAL (~2s): the dramatic moment
+      // ACT 3 — THE SEAL (~1.2s): snap, flash, done
       setPhase('sealing');
       setFlashKey(k => k + 1);
-      await new Promise(r => setTimeout(r, 1800));
+      await new Promise(r => setTimeout(r, 1200));
       if (cancelled) return;
       
-      // ACT 4 — THE PROOF (~4s): sealed forever, fees compound
+      // ACT 4 — THE PROOF (~3s): the consequence lands
       setPhase('sealed');
       setFlashKey(k => k + 1);
-      await new Promise(r => setTimeout(r, 4500));
+      await new Promise(r => setTimeout(r, 3000));
       if (cancelled) return;
       
-      // RESET — quick fade out, snap back
       setPhase('curve');
       setFillPct(20);
     };
     seq();
-    const id = setInterval(seq, 12000);
+    const id = setInterval(seq, 8800);
     return () => { cancelled = true; clearInterval(id); };
   }, []);
 
@@ -2000,8 +2011,8 @@ function HeroVault() {
             <div key={`sub-${phase}-${fillPct >= 95 ? 'b' : Math.floor(fillPct/10)}`} style={{ fontSize: 13, color: 'var(--fg-dim)', marginTop: 6, fontFamily: 'var(--mono)', animation: 'fadeIn 400ms ease' }}>
               {phase === 'curve' && fillPct < 95 && `${fillPct}% · approaching graduation`}
               {phase === 'curve' && fillPct >= 95 && 'Vault PDA initializing'}
-              {phase === 'sealing' && 'LP transferred · withdraw fn removed'}
-              {phase === 'sealed' && 'Fees compounding · ∞'}
+              {phase === 'sealing' && 'Initial LP transferred · withdraw fn removed'}
+              {phase === 'sealed' && 'Fees re-staked into vault · ∞'}
             </div>
           </div>
         </div>
@@ -2099,8 +2110,8 @@ function FlowDiagram() {
   const steps = [
     { n: '01', t: 'Bonding Curve', d: 'Buyers deposit SOL. Tokens minted by formula. No presale, no team allocation.', vault: { state: 'open', fill: 30 } },
     { n: '02', t: 'Graduation', d: 'At $69K mcap, curve reserves seed a Raydium pool. Atomic, single transaction.', vault: { state: 'open', fill: 95 } },
-    { n: '03', t: 'Vault Sealed', d: 'LP transferred to Vault PDA. The withdraw instruction does not exist.', vault: { state: 'sealing', fill: 100 } },
-    { n: '04', t: 'Compounding', d: '70% of fees deepen the LP. 20% distributed to gLP holders. Forever.', vault: { state: 'sealed', fill: 100 } },
+    { n: '03', t: 'Vault Sealed', d: 'Initial LP transferred to Vault PDA at graduation. No withdraw instruction exists — for anyone.', vault: { state: 'sealing', fill: 100 } },
+    { n: '04', t: 'Compounding', d: '70% of fees re-staked into the same vault, deepening locked liquidity. 20% to gLP holders. The pool only grows.', vault: { state: 'sealed', fill: 100 } },
   ];
 
   return (
@@ -2572,31 +2583,34 @@ function TheNetwork({ tokens }) {
     if (!ref.current) return;
     const obs = new IntersectionObserver(
       (entries) => entries.forEach(e => { if (e.isIntersecting) { setReveal(true); obs.unobserve(e.target); } }),
-      { threshold: 0.2 }
+      { threshold: 0.1, rootMargin: "0px 0px -40px 0px" }
     );
     obs.observe(ref.current);
     return () => obs.disconnect();
   }, []);
   
-  // Procedurally generated "vault locations" — pseudo-geographic spread
+  // Procedurally generated "vault locations" — spread across the full canvas
   const nodes = useMemo(() => {
     const out = [];
-    const n = 64;
-    // distribute roughly along latitudes that match populated areas
+    const n = 96;
+    // distribute across the full vertical range with population weighting
     const latBands = [
-      { y: 0.18, weight: 0.25, name: 'Northern' },   // North America / Europe
-      { y: 0.32, weight: 0.30, name: 'Mid-North' },  // US, EU, China, Japan
-      { y: 0.50, weight: 0.20, name: 'Equatorial' }, // SE Asia, Africa, S America
-      { y: 0.65, weight: 0.15, name: 'Southern' },   // Australia, S Africa, S America
-      { y: 0.82, weight: 0.10, name: 'Far South' },
+      { y: 0.08, weight: 0.10 },   // far north
+      { y: 0.20, weight: 0.18 },   // north
+      { y: 0.34, weight: 0.22 },   // mid-north (most populated)
+      { y: 0.48, weight: 0.18 },   // equatorial
+      { y: 0.62, weight: 0.15 },   // mid-south
+      { y: 0.76, weight: 0.10 },   // south
+      { y: 0.90, weight: 0.07 },   // far south
     ];
     for (let i = 0; i < n; i++) {
       const r = Math.random();
       let cum = 0;
       let band;
       for (const b of latBands) { cum += b.weight; if (r < cum) { band = b; break; } }
-      const y = band.y + (Math.random() - 0.5) * 0.12;
-      const x = Math.random();
+      const y = Math.max(0.04, Math.min(0.96, band.y + (Math.random() - 0.5) * 0.16));
+      // Spread x across the full width with edge bias for variety
+      const x = Math.random() * 0.96 + 0.02;
       out.push({ 
         x: x * 100, 
         y: y * 100, 
@@ -2663,36 +2677,36 @@ function TheNetwork({ tokens }) {
         {/* The constellation map */}
         <div style={{ 
           position: 'relative', 
-          height: 480, 
-          maxWidth: 1100, 
+          height: 560, 
+          maxWidth: 1500, 
           margin: '0 auto',
           opacity: reveal ? 1 : 0,
-          transition: 'opacity 1600ms ease 200ms',
+          transition: 'opacity 600ms var(--ease-snap) 100ms',
         }}>
           {/* atmospheric backdrop */}
           <div style={{ 
             position: 'absolute', inset: 0, 
-            background: 'radial-gradient(ellipse 800px 400px at 50% 50%, rgba(107,163,255,0.08) 0%, transparent 70%)',
+            background: 'radial-gradient(ellipse 1100px 500px at 50% 50%, rgba(107,163,255,0.08) 0%, transparent 70%)',
             filter: 'blur(40px)',
             pointerEvents: 'none',
           }} />
           
           {/* faint grid lines suggesting latitude / longitude */}
-          <svg viewBox="0 0 1100 480" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.4 }}>
+          <svg viewBox="0 0 1500 560" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.4 }}>
             {/* horizontal lines (latitude) */}
-            {[80, 160, 240, 320, 400].map(y => (
-              <line key={`h${y}`} x1="0" y1={y} x2="1100" y2={y} stroke="var(--line-2)" strokeWidth="0.4" strokeDasharray="2 8" />
+            {[70, 140, 230, 330, 420, 490].map(y => (
+              <line key={`h${y}`} x1="0" y1={y} x2="1500" y2={y} stroke="var(--line-2)" strokeWidth="0.4" strokeDasharray="2 8" />
             ))}
             {/* vertical lines (longitude) */}
-            {[100, 250, 400, 550, 700, 850, 1000].map(x => (
-              <line key={`v${x}`} x1={x} y1="0" x2={x} y2="480" stroke="var(--line-2)" strokeWidth="0.4" strokeDasharray="2 8" />
+            {[120, 300, 480, 660, 840, 1020, 1200, 1380].map(x => (
+              <line key={`v${x}`} x1={x} y1="0" x2={x} y2="560" stroke="var(--line-2)" strokeWidth="0.4" strokeDasharray="2 8" />
             ))}
             {/* Connection lines between nearby nodes */}
             {nodes.map((n, i) => {
               // connect to up to 2 nearest nodes
               const dists = nodes.map((m, j) => ({ j, d: Math.hypot(n.x - m.x, n.y - m.y) })).filter(d => d.j !== i).sort((a, b) => a.d - b.d).slice(0, 2);
               return dists.map(({ j, d }) => {
-                if (d > 18) return null;
+                if (d > 14) return null;
                 const m = nodes[j];
                 return (
                   <line 
@@ -2756,9 +2770,9 @@ function TheNetwork({ tokens }) {
         </div>
         
         {/* Caption below */}
-        <div style={{ textAlign: 'center', marginTop: 48, opacity: reveal ? 1 : 0, transition: 'opacity 1200ms ease 800ms' }}>
+        <div style={{ textAlign: 'center', marginTop: 48, opacity: reveal ? 1 : 0, transition: 'opacity 600ms var(--ease-snap) 400ms' }}>
           <div style={{ fontSize: 13, color: 'var(--fg-dim)', maxWidth: 540, margin: '0 auto', lineHeight: 1.6 }}>
-            Every dot is a vault. Every line is permanent liquidity that cannot be retrieved by any party — including us.
+            Every dot is a vault. Every line is permanent liquidity — initial pools and re-staked fees alike — that cannot be retrieved by any party, including us.
           </div>
         </div>
       </div>
@@ -2837,7 +2851,7 @@ function TheTape() {
         style={{ 
           display: 'flex', 
           whiteSpace: 'nowrap', 
-          animation: 'tapeScroll 60s linear infinite',
+          animation: 'tapeScroll 45s linear infinite',
           animationPlayState: hover1 ? 'paused' : 'running',
           marginBottom: 8,
           transition: 'opacity 200ms',
@@ -2858,7 +2872,7 @@ function TheTape() {
                 padding: '0 32px',
                 color: word === '∞' ? 'var(--acid)' : word === '◆' ? 'var(--purple-l)' : 'var(--fg)',
                 cursor: 'pointer',
-                transition: 'transform 240ms cubic-bezier(0.2, 0.8, 0.2, 1), text-shadow 240ms',
+                transition: 'transform 140ms var(--ease-spring), text-shadow 140ms ease',
                 display: 'inline-block',
                 userSelect: 'none',
               }}
@@ -2883,7 +2897,7 @@ function TheTape() {
       <div style={{ 
         display: 'flex', 
         whiteSpace: 'nowrap', 
-        animation: 'tapeScrollReverse 40s linear infinite',
+        animation: 'tapeScrollReverse 32s linear infinite',
         animationPlayState: hover2 ? 'paused' : 'running',
         marginBottom: 8,
       }}>
@@ -3063,7 +3077,7 @@ function TheForge() {
     if (!sectionRef.current) return;
     const obs = new IntersectionObserver(
       (entries) => entries.forEach(e => { if (e.isIntersecting) { setReveal(true); obs.unobserve(e.target); } }),
-      { threshold: 0.2 }
+      { threshold: 0.1, rootMargin: "0px 0px -40px 0px" }
     );
     obs.observe(sectionRef.current);
     return () => obs.disconnect();
@@ -3149,8 +3163,8 @@ function TheForge() {
   }, [reveal]);
 
   // Arc geometry — bottom-left to top-right with a curved path
-  const startX = 0.10, endX = 0.88;
-  const startY = 0.78, endY = 0.20;
+  const startX = 0.18, endX = 0.78;
+  const startY = 0.74, endY = 0.26;
   const arcAt = (t) => {
     const x = startX + (endX - startX) * t;
     // Curve: token rises faster than it travels right (gentle parabola)
@@ -3194,7 +3208,7 @@ function TheForge() {
       
       <div style={{ maxWidth: 880, margin: '0 auto', position: 'relative' }}>
         {/* Header */}
-        <div style={{ textAlign: 'center', marginBottom: 80, opacity: reveal ? 1 : 0, transform: reveal ? 'translateY(0)' : 'translateY(12px)', transition: 'opacity 1600ms ease, transform 1600ms ease' }}>
+        <div style={{ textAlign: 'center', marginBottom: 80, opacity: reveal ? 1 : 0, transform: reveal ? 'translateY(0)' : 'translateY(12px)', transition: 'opacity 700ms var(--ease-snap), transform 700ms var(--ease-snap)' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 16, marginBottom: 32 }}>
             <div style={{ width: 32, height: 1, background: 'linear-gradient(90deg, transparent, var(--acid))' }} />
             <span style={{ fontSize: 11, color: 'var(--acid)', letterSpacing: '0.18em', fontWeight: 600, textTransform: 'uppercase', fontFamily: 'var(--mono)' }}>The Loop</span>
@@ -3207,24 +3221,28 @@ function TheForge() {
           </h2>
         </div>
         
-        {/* The frame — atmospheric, gradients painted across */}
+        {/* The frame — atmospheric, gradients painted across, no hard edges */}
         <div style={{ 
           position: 'relative',
-          height: 420,
-          maxWidth: 820,
+          height: 460,
+          width: '100%',
+          maxWidth: 1100,
           margin: '0 auto',
           opacity: reveal ? 1 : 0,
-          transition: 'opacity 1800ms ease 200ms',
+          transition: 'opacity 700ms var(--ease-snap) 100ms',
+          // Soft radial mask — composition fades to transparent at the edges
+          maskImage: 'radial-gradient(ellipse 60% 70% at 50% 50%, black 20%, rgba(0,0,0,0.8) 50%, transparent 92%)',
+          WebkitMaskImage: 'radial-gradient(ellipse 60% 70% at 50% 50%, black 20%, rgba(0,0,0,0.8) 50%, transparent 92%)',
         }}>
-          {/* Ambient atmosphere — warm-cool gradient wash that fills the frame */}
+          {/* Ambient atmosphere — warm-cool gradient wash, no rectangle */}
           <div style={{
             position: 'absolute',
             inset: 0,
             background: phase === 'sealed'
-              ? 'radial-gradient(ellipse 60% 70% at 85% 25%, rgba(107,163,255,0.20) 0%, rgba(159,122,234,0.10) 35%, transparent 70%)'
+              ? 'radial-gradient(ellipse 50% 60% at 75% 30%, rgba(107,163,255,0.22) 0%, rgba(159,122,234,0.10) 40%, transparent 75%)'
               : phase === 'flash'
-              ? 'radial-gradient(ellipse 80% 80% at 85% 25%, rgba(255,255,255,0.18) 0%, rgba(159,122,234,0.18) 30%, rgba(107,163,255,0.08) 55%, transparent 80%)'
-              : 'radial-gradient(ellipse 50% 65% at 12% 80%, rgba(251,191,36,0.10) 0%, rgba(251,191,36,0.04) 30%, transparent 60%), radial-gradient(ellipse 55% 65% at 88% 22%, rgba(159,122,234,0.10) 0%, rgba(107,163,255,0.05) 35%, transparent 65%)',
+              ? 'radial-gradient(ellipse 70% 75% at 75% 30%, rgba(255,255,255,0.20) 0%, rgba(159,122,234,0.18) 30%, rgba(107,163,255,0.08) 55%, transparent 80%)'
+              : 'radial-gradient(ellipse 35% 50% at 22% 75%, rgba(251,191,36,0.10) 0%, rgba(251,191,36,0.04) 35%, transparent 65%), radial-gradient(ellipse 40% 55% at 78% 28%, rgba(159,122,234,0.10) 0%, rgba(107,163,255,0.05) 40%, transparent 70%)',
             transition: 'background 1800ms ease',
             pointerEvents: 'none',
             zIndex: 0,
@@ -3232,13 +3250,16 @@ function TheForge() {
           
           {/* Trail — ribbon of light, multiple glow layers */}
           {trail.length > 1 && phase !== 'fade' && (
-            <svg viewBox="0 0 820 420" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', zIndex: 1 }}>
+            <svg viewBox="0 0 1100 460" preserveAspectRatio="none" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', zIndex: 1 }}>
               <defs>
                 <linearGradient id="forge-trail-grad" x1="0" y1="1" x2="1" y2="0">
                   <stop offset="0%" stopColor="#fbbf24" stopOpacity="0" />
-                  <stop offset="25%" stopColor="#fbbf24" stopOpacity="0.5" />
-                  <stop offset="55%" stopColor="#f97316" stopOpacity="0.7" />
-                  <stop offset="80%" stopColor="#9f7aea" stopOpacity="0.85" />
+                  <stop offset="12%" stopColor="#fbbf24" stopOpacity="0.35" />
+                  <stop offset="28%" stopColor="#fb923c" stopOpacity="0.55" />
+                  <stop offset="42%" stopColor="#f97316" stopOpacity="0.7" />
+                  <stop offset="55%" stopColor="#e879c2" stopOpacity="0.78" />
+                  <stop offset="68%" stopColor="#c084fc" stopOpacity="0.85" />
+                  <stop offset="82%" stopColor="#9f7aea" stopOpacity="0.9" />
                   <stop offset="100%" stopColor="#6ba3ff" stopOpacity="1" />
                 </linearGradient>
                 <filter id="forge-trail-glow-wide" x="-50%" y="-50%" width="200%" height="200%">
@@ -3249,9 +3270,14 @@ function TheForge() {
                 </filter>
               </defs>
               {(() => {
-                const pathStr = trail.map((p, i) => {
+                // Build full path: stored samples + live current position so the trail
+                // always terminates exactly at the orb's current location.
+                const pts = phase === 'buying' || phase === 'appear' 
+                  ? [...trail, { t: tokenT }]
+                  : trail;
+                const pathStr = pts.map((p, i) => {
                   const pos = arcAt(p.t);
-                  return `${i === 0 ? 'M' : 'L'} ${(pos.x * 820).toFixed(1)} ${(pos.y * 420).toFixed(1)}`;
+                  return `${i === 0 ? 'M' : 'L'} ${(pos.x * 1100).toFixed(1)} ${(pos.y * 460).toFixed(1)}`;
                 }).join(' ');
                 return (
                   <>
@@ -3292,52 +3318,65 @@ function TheForge() {
             </div>
           ))}
           
-          {/* Token — luminous orb of light, color shifts with progress */}
-          {(phase === 'appear' || phase === 'buying') && (
-            <div style={{
-              position: 'absolute',
-              left: `${tokenPos.x * 100}%`,
-              top: `${tokenPos.y * 100}%`,
-              transform: 'translate(-50%, -50%)',
-              animation: phase === 'appear' ? 'forgeTokenAppear 1400ms cubic-bezier(0.2, 0.8, 0.2, 1)' : 'none',
-              zIndex: 5,
-              pointerEvents: 'none',
-            }}>
-              {/* Outermost atmospheric glow */}
+          {/* Token — luminous orb of light, color shifts smoothly through the spectrum */}
+          {(phase === 'appear' || phase === 'buying') && (() => {
+            // Continuous color interpolation — hue rotates from amber → orange → magenta → purple → blue
+            // as tokenT travels 0 → 1. Sweeps from 45° down through 0° (wraps to 360°) and continues to 220°.
+            // Total distance: 45 - (-140) = 185° traversed, ending at 220°.
+            const t = tokenT;
+            const hueRaw = 45 - t * 185;       // 45 → -140
+            const hue = ((hueRaw % 360) + 360) % 360;  // wrap to 0-360
+            const sat = 90 - t * 12;
+            const lightCore = 70 - t * 5;
+            const coreColor = `hsl(${hue}, ${sat}%, ${lightCore}%)`;
+            const midColor = `hsla(${hue}, ${sat}%, 60%, 0.55)`;
+            const outerColor = `hsla(${hue}, ${sat}%, 55%, 0.20)`;
+            const edgeHue = ((hueRaw - 20) % 360 + 360) % 360;
+            const edgeColor = `hsl(${edgeHue}, ${sat}%, 50%)`;
+            
+            return (
               <div style={{
                 position: 'absolute',
-                top: '50%', left: '50%',
-                width: 220 - tokenT * 30, 
-                height: 220 - tokenT * 30,
-                marginLeft: -(110 - tokenT * 15),
-                marginTop: -(110 - tokenT * 15),
-                borderRadius: '50%',
-                background: `radial-gradient(circle, ${tokenT < 0.5 ? 'rgba(251,191,36,0.20)' : 'rgba(159,122,234,0.20)'} 0%, transparent 70%)`,
-                filter: 'blur(20px)',
-                transition: 'background 800ms',
-              }} />
-              {/* Mid glow */}
-              <div style={{
-                position: 'absolute',
-                top: '50%', left: '50%',
-                width: 90, height: 90,
-                marginLeft: -45, marginTop: -45,
-                borderRadius: '50%',
-                background: `radial-gradient(circle, ${tokenT < 0.4 ? 'rgba(251,191,36,0.55)' : tokenT < 0.7 ? 'rgba(247,115,22,0.55)' : 'rgba(159,122,234,0.55)'} 0%, transparent 70%)`,
-                filter: 'blur(8px)',
-                transition: 'background 600ms',
-              }} />
-              {/* Bright core */}
-              <div style={{
-                position: 'relative',
-                width: 18, height: 18,
-                borderRadius: '50%',
-                background: `radial-gradient(circle, #fff 0%, ${tokenT < 0.4 ? '#fbbf24' : tokenT < 0.7 ? '#f97316' : '#c084fc'} 60%, ${tokenT < 0.4 ? '#f97316' : tokenT < 0.7 ? '#9f7aea' : '#6ba3ff'} 100%)`,
-                boxShadow: '0 0 12px rgba(255,255,255,0.6)',
-                transition: 'background 600ms',
-              }} />
-            </div>
-          )}
+                left: `${tokenPos.x * 100}%`,
+                top: `${tokenPos.y * 100}%`,
+                transform: 'translate(-50%, -50%)',
+                animation: phase === 'appear' ? 'forgeTokenAppear 1400ms cubic-bezier(0.2, 0.8, 0.2, 1)' : 'none',
+                zIndex: 5,
+                pointerEvents: 'none',
+              }}>
+                {/* Outermost atmospheric glow */}
+                <div style={{
+                  position: 'absolute',
+                  top: '50%', left: '50%',
+                  width: 220 - t * 30, 
+                  height: 220 - t * 30,
+                  marginLeft: -(110 - t * 15),
+                  marginTop: -(110 - t * 15),
+                  borderRadius: '50%',
+                  background: `radial-gradient(circle, ${outerColor} 0%, transparent 70%)`,
+                  filter: 'blur(20px)',
+                }} />
+                {/* Mid glow */}
+                <div style={{
+                  position: 'absolute',
+                  top: '50%', left: '50%',
+                  width: 90, height: 90,
+                  marginLeft: -45, marginTop: -45,
+                  borderRadius: '50%',
+                  background: `radial-gradient(circle, ${midColor} 0%, transparent 70%)`,
+                  filter: 'blur(8px)',
+                }} />
+                {/* Bright core */}
+                <div style={{
+                  position: 'relative',
+                  width: 18, height: 18,
+                  borderRadius: '50%',
+                  background: `radial-gradient(circle, #fff 0%, ${coreColor} 60%, ${edgeColor} 100%)`,
+                  boxShadow: '0 0 12px rgba(255,255,255,0.6)',
+                }} />
+              </div>
+            );
+          })()}
           
           {/* Graduation flash — bigger, softer, blooms across the frame */}
           {phase === 'flash' && (
@@ -3346,7 +3385,7 @@ function TheForge() {
               <div style={{
                 position: 'absolute',
                 left: `${endX * 100}%`,
-                top: `${endY * 100 - 6}%`,
+                top: `${endY * 100}%`,
                 width: 700, height: 700,
                 marginLeft: -350, marginTop: -350,
                 borderRadius: '50%',
@@ -3361,7 +3400,7 @@ function TheForge() {
               <div style={{
                 position: 'absolute',
                 left: `${endX * 100}%`,
-                top: `${endY * 100 - 6}%`,
+                top: `${endY * 100}%`,
                 width: 320, height: 320,
                 marginLeft: -160, marginTop: -160,
                 borderRadius: '50%',
@@ -3375,7 +3414,7 @@ function TheForge() {
               <div style={{
                 position: 'absolute',
                 left: `${endX * 100}%`,
-                top: `${endY * 100 - 6}%`,
+                top: `${endY * 100}%`,
                 width: 100, height: 100,
                 marginLeft: -50, marginTop: -50,
                 borderRadius: '50%',
@@ -3394,7 +3433,7 @@ function TheForge() {
               <div style={{
                 position: 'absolute',
                 left: `${endX * 100}%`,
-                top: `${endY * 100 - 6}%`,
+                top: `${endY * 100}%`,
                 width: 280, height: 280,
                 marginLeft: -140, marginTop: -140,
                 borderRadius: '50%',
@@ -3407,7 +3446,7 @@ function TheForge() {
               <div style={{
                 position: 'absolute',
                 left: `${endX * 100}%`,
-                top: `${endY * 100 - 6}%`,
+                top: `${endY * 100}%`,
                 transform: 'translate(-50%, -50%)',
                 animation: 'forgeVaultEmerge 1600ms cubic-bezier(0.2, 0.8, 0.2, 1)',
                 zIndex: 5,
@@ -3436,7 +3475,7 @@ function TheForge() {
           marginTop: 72, 
           minHeight: 80,
           opacity: reveal ? 1 : 0,
-          transition: 'opacity 1600ms ease 600ms',
+          transition: 'opacity 700ms var(--ease-snap) 300ms',
         }}>
           <div 
             key={`cap-${phase}`}
@@ -3445,7 +3484,7 @@ function TheForge() {
               fontWeight: 500, 
               letterSpacing: '-0.015em',
               color: 'var(--fg)',
-              animation: caption ? 'forgeCaptionIn 1200ms cubic-bezier(0.2, 0.8, 0.2, 1)' : 'none',
+              animation: caption ? 'forgeCaptionIn 600ms var(--ease-snap)' : 'none',
               opacity: caption ? 1 : 0,
               transition: 'opacity 800ms ease',
             }}
@@ -3546,7 +3585,7 @@ function TheSeal() {
     if (!ref.current) return;
     const obs = new IntersectionObserver(
       (entries) => entries.forEach(e => { if (e.isIntersecting) { setReveal(true); obs.unobserve(e.target); } }),
-      { threshold: 0.2 }
+      { threshold: 0.1, rootMargin: "0px 0px -40px 0px" }
     );
     obs.observe(ref.current);
     return () => obs.disconnect();
@@ -3577,7 +3616,7 @@ function TheSeal() {
         marginBottom: 80,
         opacity: reveal ? 1 : 0,
         transform: reveal ? 'translateY(0)' : 'translateY(12px)',
-        transition: 'opacity 1200ms ease, transform 1200ms ease',
+        transition: 'opacity 600ms var(--ease-snap), transform 600ms var(--ease-snap)',
       }}>
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 16 }}>
           <div style={{ width: 32, height: 1, background: 'linear-gradient(90deg, transparent, var(--acid))' }} />
@@ -3594,7 +3633,7 @@ function TheSeal() {
         textAlign: 'center',
         marginTop: 96,
         opacity: reveal ? 1 : 0,
-        transition: 'opacity 1600ms ease 800ms',
+        transition: 'opacity 700ms var(--ease-snap) 400ms',
       }}>
         <div className="serif" style={{
           fontSize: 'clamp(28px, 3.4vw, 44px)',
@@ -3692,7 +3731,7 @@ function SealComposition({ beamAngle, reveal }) {
         background: 'radial-gradient(circle at center, rgba(107,163,255,0.12) 0%, rgba(159,122,234,0.08) 25%, transparent 55%)',
         filter: 'blur(40px)',
         opacity: reveal ? 1 : 0,
-        transition: 'opacity 1800ms ease 200ms',
+        transition: 'opacity 700ms var(--ease-snap) 100ms',
       }} />
 
       {/* OUTER RING — 12-pointed star, slow rotate */}
@@ -3703,7 +3742,7 @@ function SealComposition({ beamAngle, reveal }) {
         height: '100%',
         animation: 'sealRing1 240s linear infinite',
         opacity: reveal ? 0.7 : 0,
-        transition: 'opacity 1800ms ease 400ms',
+        transition: 'opacity 700ms var(--ease-snap) 200ms',
       }}>
         <defs>
           <linearGradient id="seal-grad-outer" x1="0" y1="0" x2="1" y2="1">
@@ -4033,7 +4072,7 @@ function DiscoverPage({ navigate, tokens }) {
         {filtered.map((t, i) => {
           const up = t.change24h >= 0;
           return (
-            <button key={t.id} onClick={() => navigate('token', t.id)} className="gg-resp-discover-table-row" style={{ position: 'relative', display: 'grid', gridTemplateColumns: '40px 60px 2fr 1fr 1fr 1fr 1fr 140px', padding: '14px 20px', borderBottom: '1px solid var(--line)', background: 'transparent', border: 'none', borderBottomColor: 'var(--line)', borderBottomStyle: 'solid', borderBottomWidth: 1, width: '100%', textAlign: 'left', cursor: 'pointer', alignItems: 'center', color: 'var(--fg)', transition: 'all 200ms cubic-bezier(0.2, 0.8, 0.2, 1)', fontFamily: 'var(--sans)' }}
+            <button key={t.id} onClick={() => navigate('token', t.id)} className="gg-resp-discover-table-row" style={{ position: 'relative', display: 'grid', gridTemplateColumns: '40px 60px 2fr 1fr 1fr 1fr 1fr 140px', padding: '14px 20px', borderBottom: '1px solid var(--line)', background: 'transparent', border: 'none', borderBottomColor: 'var(--line)', borderBottomStyle: 'solid', borderBottomWidth: 1, width: '100%', textAlign: 'left', cursor: 'pointer', alignItems: 'center', color: 'var(--fg)', transition: 'all 120ms var(--ease-snap)', fontFamily: 'var(--sans)' }}
               onMouseEnter={e => { 
                 e.currentTarget.style.background = 'linear-gradient(90deg, rgba(107,163,255,0.04) 0%, transparent 100%)';
                 const indicator = e.currentTarget.querySelector('[data-indicator]');
@@ -4224,7 +4263,7 @@ function TokenPage({ token, navigate, walletConnected, connectWallet, solBalance
                 height: 2,
                 background: side === 'buy' ? 'var(--acid)' : 'var(--red)',
                 boxShadow: side === 'buy' ? '0 0 12px var(--acid)' : '0 0 12px var(--red)',
-                transition: 'all 240ms cubic-bezier(0.2, 0.8, 0.2, 1)',
+                transition: 'all 140ms var(--ease-snap)',
                 zIndex: 1,
               }} />
               <button onClick={() => setSide('buy')} style={{ 
@@ -4234,7 +4273,7 @@ function TokenPage({ token, navigate, walletConnected, connectWallet, solBalance
                 border: 'none', cursor: 'pointer', 
                 fontSize: 14, fontWeight: 600, letterSpacing: '-0.005em', 
                 fontFamily: 'var(--sans)',
-                transition: 'all 240ms',
+                transition: 'all 140ms var(--ease-snap)',
                 borderBottom: '1px solid var(--line)',
               }}>Buy</button>
               <button onClick={() => setSide('sell')} style={{ 
@@ -4244,7 +4283,7 @@ function TokenPage({ token, navigate, walletConnected, connectWallet, solBalance
                 border: 'none', cursor: 'pointer', 
                 fontSize: 14, fontWeight: 600, letterSpacing: '-0.005em', 
                 fontFamily: 'var(--sans)',
-                transition: 'all 240ms',
+                transition: 'all 140ms var(--ease-snap)',
                 borderBottom: '1px solid var(--line)',
               }}>Sell</button>
             </div>
@@ -4855,12 +4894,13 @@ function DocsPage() {
 
           <DocSection num="05" title="The Sealed Vault">
             <p>The Vault PDA is the core of the rug-proof guarantee. Its address is derived deterministically from <span className="mono" style={{ color: 'var(--fg)' }}>["vault", token_mint]</span>, meaning anyone can verify ownership of a given LP without consulting the team.</p>
-            <p style={{ marginTop: 16, color: 'var(--fg)' }}>The Vault program contains exactly two instructions affecting the LP tokens:</p>
+            <p style={{ marginTop: 16, color: 'var(--fg)' }}>The Vault program contains exactly three instructions affecting the LP tokens — none of them remove liquidity:</p>
             <SpecTable rows={[
-              ['receive_lp', 'Called once at graduation. Idempotent. Cannot be called again for the same token.'],
-              ['claim_fees', 'Called by anyone (typically a keeper). Pulls accumulated fees from Raydium and routes them to gLP holders. Does NOT move the underlying LP.'],
+              ['receive_lp', 'Called once at graduation. Transfers the initial LP from Raydium to the Vault PDA. Idempotent — cannot be called again.'],
+              ['compound_into_vault', 'Called by anyone. Takes the 70% LP-share of accumulated fees and adds it to the Vault PDA\'s balance. Adds-only — never subtracts.'],
+              ['claim_fees', 'Called by anyone (typically a keeper). Routes the gLP-holder share of fees to stakers. Does NOT touch the locked LP.'],
             ]} />
-            <p style={{ marginTop: 20 }}>There is no <span className="mono" style={{ color: 'var(--fg)' }}>withdraw_lp</span>, no <span className="mono" style={{ color: 'var(--fg)' }}>migrate</span>, no <span className="mono" style={{ color: 'var(--fg)' }}>emergency_exit</span>, no <span className="mono" style={{ color: 'var(--fg)' }}>upgrade_authority</span>. The program is deployed with the upgrade authority set to the burn address. <span style={{ color: 'var(--fg)' }}>The code that runs today is the code that will run forever.</span></p>
+            <p style={{ marginTop: 20 }}>There is no <span className="mono" style={{ color: 'var(--fg)' }}>withdraw_lp</span>, no <span className="mono" style={{ color: 'var(--fg)' }}>migrate</span>, no <span className="mono" style={{ color: 'var(--fg)' }}>emergency_exit</span>, no <span className="mono" style={{ color: 'var(--fg)' }}>upgrade_authority</span>. The program is deployed with the upgrade authority set to the burn address. The Vault PDA accepts deposits — initial LP and re-staked fees alike — and never permits withdrawals from anyone. <span style={{ color: 'var(--fg)' }}>The pool only grows.</span></p>
           </DocSection>
 
           <DocSection num="06" title="gLP — Liquid Stake">
