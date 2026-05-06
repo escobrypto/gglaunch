@@ -167,48 +167,62 @@ function Vault({ size = 64, state = 'sealed', fillPct = 100, glow = true, animat
   const innerPtStr = pts.map(p => [cx + (p[0]-cx)*0.82, cy + (p[1]-cy)*0.82].join(',')).join(' ');
   const color = state === 'sealed' ? '#6ba3ff' : state === 'sealing' ? '#9f7aea' : '#fbbf24';
   
-  // Wave animation phase
-  const [wavePhase, setWavePhase] = useState(0);
-  const [breathePulse, setBreathePulse] = useState(0);
+  // Refs for per-frame mutation — avoids React reconciliation 60×/sec
+  const wavePathRef = useRef(null);
+  const surfacePathRef = useRef(null);
+  const scanLineRef = useRef(null);
+  
+  // Constants used inside the rAF loop
+  const waveAmp = size * 0.012;
+  const waveSegments = 12;
   
   useEffect(() => {
     if (!animate) return;
     let raf;
-    let start = performance.now();
+    const start = performance.now();
     const tick = (now) => {
       const t = (now - start) / 1000;
-      setWavePhase(t);
-      if (breathe) setBreathePulse(Math.sin(t * 1.6) * 1.5);
+      const breathePulse = breathe ? Math.sin(t * 1.6) * 1.5 : 0;
+      const effFill = Math.max(0, Math.min(100, fillPct + breathePulse));
+      const fillTop = h - (h * 0.7) * (effFill / 100);
+      
+      // Build wave path directly as SVG path string
+      let wavePath = `M 0 ${h} L 0 ${fillTop}`;
+      let surfacePath = '';
+      for (let i = 0; i <= waveSegments; i++) {
+        const x = (w / waveSegments) * i;
+        const y = fillTop + Math.sin(t * 2 + (i / waveSegments) * Math.PI * 3) * waveAmp;
+        wavePath += ` L ${x} ${y}`;
+        surfacePath += (i === 0 ? 'M ' : ' L ') + `${x} ${y}`;
+      }
+      wavePath += ` L ${w} ${h} Z`;
+      
+      // Direct attribute manipulation — no React, no reconciliation
+      if (wavePathRef.current) wavePathRef.current.setAttribute('d', wavePath);
+      if (surfacePathRef.current) surfacePathRef.current.setAttribute('d', surfacePath);
+      if (scanline && scanLineRef.current) {
+        const scanY = (cy - r * 0.7) + ((t * 80) % (r * 1.4));
+        scanLineRef.current.setAttribute('y1', scanY);
+        scanLineRef.current.setAttribute('y2', scanY);
+      }
+      
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [animate, breathe]);
+  }, [animate, breathe, fillPct, scanline, h, w, size, cy, r, waveAmp]);
   
-  const effFill = Math.max(0, Math.min(100, fillPct + breathePulse));
-  const fillTop = h - (h * 0.7) * (effFill / 100);
-  
-  // Build wavy fill path
-  const waveAmp = size * 0.012;
-  const waveSegments = 12;
-  let wavePath = `M 0 ${h} L 0 ${fillTop}`;
+  // Initial path values for first paint (before rAF starts)
+  const fillTopInit = h - (h * 0.7) * (fillPct / 100);
+  let wavePathInit = `M 0 ${h} L 0 ${fillTopInit}`;
+  let surfacePathInit = '';
   for (let i = 0; i <= waveSegments; i++) {
     const x = (w / waveSegments) * i;
-    const y = fillTop + Math.sin(wavePhase * 2 + (i / waveSegments) * Math.PI * 3) * waveAmp;
-    wavePath += ` L ${x} ${y}`;
+    const y = fillTopInit;
+    wavePathInit += ` L ${x} ${y}`;
+    surfacePathInit += (i === 0 ? 'M ' : ' L ') + `${x} ${y}`;
   }
-  wavePath += ` L ${w} ${h} Z`;
-  
-  // Surface highlight line (slightly above the wave)
-  let surfacePath = '';
-  for (let i = 0; i <= waveSegments; i++) {
-    const x = (w / waveSegments) * i;
-    const y = fillTop + Math.sin(wavePhase * 2 + (i / waveSegments) * Math.PI * 3) * waveAmp;
-    surfacePath += (i === 0 ? 'M ' : ' L ') + `${x} ${y}`;
-  }
-  
-  // Scan line position (sweeps top to bottom of vault interior)
-  const scanY = scanline ? (cy - r * 0.7) + ((wavePhase * 80) % (r * 1.4)) : 0;
+  wavePathInit += ` L ${w} ${h} Z`;
   
   return (
     <div style={{ position: 'relative', width: w, height: h, display: 'inline-block' }}>
@@ -244,12 +258,12 @@ function Vault({ size = 64, state = 'sealed', fillPct = 100, glow = true, animat
         
         {/* liquid fill */}
         <g clipPath={`url(#vc-${id})`}>
-          <path d={wavePath} fill={`url(#vf-${id})`} />
+          <path ref={wavePathRef} d={wavePathInit} fill={`url(#vf-${id})`} />
           {/* surface highlight */}
-          <path d={surfacePath} fill="none" stroke={color} strokeWidth="0.8" opacity="0.7" />
+          <path ref={surfacePathRef} d={surfacePathInit} fill="none" stroke={color} strokeWidth="0.8" opacity="0.7" />
           {/* scan line inside vault */}
           {scanline && (
-            <line x1={cx - r * 0.85} y1={scanY} x2={cx + r * 0.85} y2={scanY} stroke={color} strokeWidth="0.5" opacity="0.4" />
+            <line ref={scanLineRef} x1={cx - r * 0.85} y1={cy} x2={cx + r * 0.85} y2={cy} stroke={color} strokeWidth="0.5" opacity="0.4" />
           )}
         </g>
         
@@ -1781,19 +1795,20 @@ function HeroVault() {
   const [phase, setPhase] = useState('curve');
   const [fillPct, setFillPct] = useState(20);
   const [flashKey, setFlashKey] = useState(0);
-  const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const containerRef = useRef(null);
+  const tiltRef = useRef(null);
 
-  // Mouse parallax tilt
+  // Mouse parallax tilt — CSS var mutation, no React rerenders
   useEffect(() => {
     const handler = (e) => {
-      if (!containerRef.current) return;
+      if (!containerRef.current || !tiltRef.current) return;
       const rect = containerRef.current.getBoundingClientRect();
       const cx = rect.left + rect.width / 2;
       const cy = rect.top + rect.height / 2;
       const dx = (e.clientX - cx) / window.innerWidth;
       const dy = (e.clientY - cy) / window.innerHeight;
-      setTilt({ x: dx * 8, y: -dy * 8 });
+      tiltRef.current.style.setProperty('--tilt-x', `${dx * 8}deg`);
+      tiltRef.current.style.setProperty('--tilt-y', `${-dy * 8}deg`);
     };
     window.addEventListener('mousemove', handler);
     return () => window.removeEventListener('mousemove', handler);
@@ -1803,9 +1818,10 @@ function HeroVault() {
     let cancelled = false;
     const seq = async () => {
       // ACT 1 — THE FILL (~3s): rapid confident climb
-      for (let i = 20; i <= 95; i += 1) {
+      // Step by 5% to reduce React rerenders (visually identical at this speed)
+      for (let i = 20; i <= 95; i += 5) {
         if (cancelled) return;
-        await new Promise(r => setTimeout(r, 38));
+        await new Promise(r => setTimeout(r, 190));
         setFillPct(i);
       }
       if (cancelled) return;
@@ -1839,11 +1855,12 @@ function HeroVault() {
 
   return (
     <div ref={containerRef} style={{ position: 'relative', width: 540, height: 540, perspective: 1200 }}>
-      <div className="gg-tilt-disable" style={{ 
+      <div ref={tiltRef} className="gg-tilt-disable" style={{ 
         width: '100%', height: '100%', position: 'relative',
         transformStyle: 'preserve-3d',
-        transform: `rotateY(${tilt.x}deg) rotateX(${tilt.y}deg)`,
+        transform: 'rotateY(var(--tilt-x, 0deg)) rotateX(var(--tilt-y, 0deg))',
         transition: 'transform 200ms cubic-bezier(0.2, 0.8, 0.2, 1)',
+        willChange: 'transform',
       }}>
       {/* ambient glow — pulses brighter on phase change */}
       <div key={`glow-${phase}`} style={{ position: 'absolute', inset: 0, background: `radial-gradient(circle at center, ${color}40 0%, ${color}15 30%, transparent 65%)`, filter: 'blur(50px)', transition: 'background 1500ms ease', animation: 'fadeIn 1200ms ease' }} />
@@ -2638,7 +2655,33 @@ function TheNetwork({ tokens }) {
       borderBottom: '1px solid var(--line)',
       overflow: 'hidden',
     }}>
-      <div style={{ maxWidth: 1400, margin: '0 auto' }}>
+      {/* The constellation map - FULL WIDTH, sits behind content */}
+      <div style={{ 
+        position: 'absolute',
+        top: '50%',
+        left: 0,
+        right: 0,
+        height: 620,
+        marginTop: -180,
+        opacity: reveal ? 1 : 0,
+        transition: 'opacity 600ms var(--ease-snap) 100ms',
+        pointerEvents: 'none',
+        // Soft mask so stars fade at edges instead of cutting hard
+        maskImage: 'radial-gradient(ellipse 90% 80% at 50% 50%, black 30%, rgba(0,0,0,0.7) 70%, transparent 100%)',
+        WebkitMaskImage: 'radial-gradient(ellipse 90% 80% at 50% 50%, black 30%, rgba(0,0,0,0.7) 70%, transparent 100%)',
+      }}>
+        {/* atmospheric backdrop */}
+        <div style={{ 
+          position: 'absolute', inset: 0, 
+          background: 'radial-gradient(ellipse 1400px 500px at 50% 50%, rgba(107,163,255,0.08) 0%, transparent 70%)',
+          filter: 'blur(40px)',
+          pointerEvents: 'none',
+        }} />
+        
+        <ConstellationStars nodes={nodes} reveal={reveal} pulseIdx={pulseIdx} />
+      </div>
+      
+      <div style={{ maxWidth: 1400, margin: '0 auto', position: 'relative', zIndex: 2 }}>
         {/* Eyebrow + heading */}
         <div style={{ textAlign: 'center', marginBottom: 64 }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, marginBottom: 32, padding: '6px 12px', background: 'rgba(11,15,28,0.5)', border: '1px solid var(--line-2)' }}>
@@ -2673,104 +2716,12 @@ function TheNetwork({ tokens }) {
           </div>
         </div>
         
-        {/* The constellation map */}
-        <div style={{ 
-          position: 'relative', 
-          height: 560, 
-          maxWidth: 1500, 
-          margin: '0 auto',
-          opacity: reveal ? 1 : 0,
-          transition: 'opacity 600ms var(--ease-snap) 100ms',
-        }}>
-          {/* atmospheric backdrop */}
-          <div style={{ 
-            position: 'absolute', inset: 0, 
-            background: 'radial-gradient(ellipse 1100px 500px at 50% 50%, rgba(107,163,255,0.08) 0%, transparent 70%)',
-            filter: 'blur(40px)',
-            pointerEvents: 'none',
-          }} />
-          
-          {/* faint grid lines suggesting latitude / longitude */}
-          <svg viewBox="0 0 1500 560" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.4 }}>
-            {/* horizontal lines (latitude) */}
-            {[70, 140, 230, 330, 420, 490].map(y => (
-              <line key={`h${y}`} x1="0" y1={y} x2="1500" y2={y} stroke="var(--line-2)" strokeWidth="0.4" strokeDasharray="2 8" />
-            ))}
-            {/* vertical lines (longitude) */}
-            {[120, 300, 480, 660, 840, 1020, 1200, 1380].map(x => (
-              <line key={`v${x}`} x1={x} y1="0" x2={x} y2="560" stroke="var(--line-2)" strokeWidth="0.4" strokeDasharray="2 8" />
-            ))}
-            {/* Connection lines between nearby nodes */}
-            {nodes.map((n, i) => {
-              // connect to up to 2 nearest nodes
-              const dists = nodes.map((m, j) => ({ j, d: Math.hypot(n.x - m.x, n.y - m.y) })).filter(d => d.j !== i).sort((a, b) => a.d - b.d).slice(0, 2);
-              return dists.map(({ j, d }) => {
-                if (d > 14) return null;
-                const m = nodes[j];
-                return (
-                  <line 
-                    key={`l${i}-${j}`} 
-                    x1={`${n.x}%`} y1={`${n.y}%`} 
-                    x2={`${m.x}%`} y2={`${m.y}%`}
-                    stroke="var(--acid)" 
-                    strokeWidth="0.3" 
-                    opacity={0.15}
-                  />
-                );
-              });
-            })}
-          </svg>
-          
-          {/* Nodes */}
-          {nodes.map((n, i) => {
-            const isPulse = i === pulseIdx;
-            const sizeMap = { lg: 5, md: 3.5, sm: 2 };
-            const r = sizeMap[n.size];
-            return (
-              <div key={i} style={{
-                position: 'absolute',
-                left: `${n.x}%`,
-                top: `${n.y}%`,
-                width: r * 2,
-                height: r * 2,
-                marginLeft: -r,
-                marginTop: -r,
-                borderRadius: '50%',
-                background: n.size === 'lg' ? 'var(--acid)' : n.size === 'md' ? 'var(--purple-l)' : 'var(--steel)',
-                boxShadow: isPulse 
-                  ? `0 0 16px ${n.size === 'lg' ? '#6ba3ff' : n.size === 'md' ? '#b794f4' : '#5a8dd6'}, 0 0 32px ${n.size === 'lg' ? '#6ba3ff' : '#9f7aea'}`
-                  : `0 0 ${r * 2}px ${n.size === 'lg' ? '#6ba3ff88' : '#9f7aea66'}`,
-                opacity: reveal ? (isPulse ? 1 : 0.7) : 0,
-                transform: isPulse ? 'scale(1.6)' : 'scale(1)',
-                transition: `opacity 800ms ease ${n.delay * 200}ms, transform 600ms cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 600ms`,
-                zIndex: isPulse ? 3 : 1,
-              }} />
-            );
-          })}
-          
-          {/* Pulsing ring around the active node */}
-          {reveal && (
-            <div key={`ring-${pulseIdx}`} style={{
-              position: 'absolute',
-              left: `${nodes[pulseIdx]?.x ?? 50}%`,
-              top: `${nodes[pulseIdx]?.y ?? 50}%`,
-              width: 40,
-              height: 40,
-              marginLeft: -20,
-              marginTop: -20,
-              borderRadius: '50%',
-              border: '1px solid var(--acid)',
-              opacity: 0,
-              animation: 'networkRing 1.6s cubic-bezier(0.2, 0.8, 0.2, 1) 1',
-              pointerEvents: 'none',
-              zIndex: 2,
-            }} />
-          )}
-        </div>
+        {/* Spacer for the constellation positioned absolutely behind */}
+        <div style={{ height: 460 }} />
         
-        {/* Caption below */}
-        <div style={{ textAlign: 'center', marginTop: 48, opacity: reveal ? 1 : 0, transition: 'opacity 600ms var(--ease-snap) 400ms' }}>
-          <div style={{ fontSize: 13, color: 'var(--fg-dim)', maxWidth: 540, margin: '0 auto', lineHeight: 1.6 }}>
+        {/* Caption */}
+        <div style={{ textAlign: 'center', marginTop: 32, opacity: reveal ? 1 : 0, transition: 'opacity 600ms var(--ease-snap) 400ms' }}>
+          <div style={{ fontSize: 13, color: 'var(--fg-dim)', maxWidth: 580, margin: '0 auto', lineHeight: 1.6 }}>
             Every dot is a vault. Every line is permanent liquidity — initial pools and re-staked fees alike — that cannot be retrieved by any party, including us.
           </div>
         </div>
@@ -2783,6 +2734,88 @@ function TheNetwork({ tokens }) {
         }
       `}</style>
     </section>
+  );
+}
+
+// Full-width constellation rendering — extracted so the parent can position it freely
+function ConstellationStars({ nodes, reveal, pulseIdx }) {
+  return (
+    <>
+      {/* faint grid lines suggesting latitude / longitude */}
+      <svg viewBox="0 0 1500 620" preserveAspectRatio="none" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.4 }}>
+        {[80, 160, 250, 360, 460, 540].map(y => (
+          <line key={`h${y}`} x1="0" y1={y} x2="1500" y2={y} stroke="var(--line-2)" strokeWidth="0.4" strokeDasharray="2 8" />
+        ))}
+        {[120, 300, 480, 660, 840, 1020, 1200, 1380].map(x => (
+          <line key={`v${x}`} x1={x} y1="0" x2={x} y2="620" stroke="var(--line-2)" strokeWidth="0.4" strokeDasharray="2 8" />
+        ))}
+        {nodes.map((n, i) => {
+          const dists = nodes.map((m, j) => ({ j, d: Math.hypot(n.x - m.x, n.y - m.y) })).filter(d => d.j !== i).sort((a, b) => a.d - b.d).slice(0, 2);
+          return dists.map(({ j, d }) => {
+            if (d > 14) return null;
+            const m = nodes[j];
+            return (
+              <line 
+                key={`l${i}-${j}`} 
+                x1={`${n.x}%`} y1={`${n.y}%`} 
+                x2={`${m.x}%`} y2={`${m.y}%`}
+                stroke="var(--acid)" 
+                strokeWidth="0.3" 
+                opacity={0.15}
+              />
+            );
+          });
+        })}
+      </svg>
+      
+      {/* Nodes */}
+      {nodes.map((n, i) => {
+        const isPulse = i === pulseIdx;
+        const sizeMap = { lg: 5, md: 3.5, sm: 2 };
+        const r = sizeMap[n.size];
+        return (
+          <div key={i} style={{
+            position: 'absolute',
+            left: `${n.x}%`,
+            top: `${n.y}%`,
+            width: r * 2,
+            height: r * 2,
+            marginLeft: -r,
+            marginTop: -r,
+            borderRadius: '50%',
+            background: n.size === 'lg' ? 'var(--acid)' : n.size === 'md' ? 'var(--purple-l)' : 'var(--steel)',
+            boxShadow: isPulse 
+              ? `0 0 16px ${n.size === 'lg' ? '#6ba3ff' : n.size === 'md' ? '#b794f4' : '#5a8dd6'}, 0 0 32px ${n.size === 'lg' ? '#6ba3ff' : '#9f7aea'}`
+              : `0 0 ${r * 2}px ${n.size === 'lg' ? '#6ba3ff88' : '#9f7aea66'}`,
+            opacity: reveal ? (isPulse ? 1 : 0.7) : 0,
+            transform: isPulse ? 'scale(1.6)' : 'scale(1)',
+            transition: `opacity 800ms ease ${n.delay * 200}ms, transform 600ms cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 600ms`,
+            zIndex: isPulse ? 3 : 1,
+            willChange: 'transform, opacity',
+          }} />
+        );
+      })}
+      
+      {/* Pulsing ring around the active node */}
+      {reveal && nodes[pulseIdx] && (
+        <div key={`ring-${pulseIdx}`} style={{
+          position: 'absolute',
+          left: `${nodes[pulseIdx].x}%`,
+          top: `${nodes[pulseIdx].y}%`,
+          width: 40,
+          height: 40,
+          marginLeft: -20,
+          marginTop: -20,
+          borderRadius: '50%',
+          border: '1px solid var(--acid)',
+          opacity: 0,
+          animation: 'networkRing 1.6s cubic-bezier(0.2, 0.8, 0.2, 1) 1',
+          pointerEvents: 'none',
+          zIndex: 2,
+          willChange: 'transform, opacity',
+        }} />
+      )}
+    </>
   );
 }
 
