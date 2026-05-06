@@ -171,6 +171,10 @@ function Vault({ size = 64, state = 'sealed', fillPct = 100, glow = true, animat
   const wavePathRef = useRef(null);
   const surfacePathRef = useRef(null);
   const scanLineRef = useRef(null);
+  const fillPctRef = useRef(fillPct);
+  
+  // Keep ref synced with prop so rAF reads current value without re-running effect
+  fillPctRef.current = fillPct;
   
   // Constants used inside the rAF loop
   const waveAmp = size * 0.012;
@@ -183,7 +187,7 @@ function Vault({ size = 64, state = 'sealed', fillPct = 100, glow = true, animat
     const tick = (now) => {
       const t = (now - start) / 1000;
       const breathePulse = breathe ? Math.sin(t * 1.6) * 1.5 : 0;
-      const effFill = Math.max(0, Math.min(100, fillPct + breathePulse));
+      const effFill = Math.max(0, Math.min(100, fillPctRef.current + breathePulse));
       const fillTop = h - (h * 0.7) * (effFill / 100);
       
       // Build wave path directly as SVG path string
@@ -210,7 +214,7 @@ function Vault({ size = 64, state = 'sealed', fillPct = 100, glow = true, animat
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [animate, breathe, fillPct, scanline, h, w, size, cy, r, waveAmp]);
+  }, [animate, breathe, scanline, h, w, size, cy, r, waveAmp]);
   
   // Initial path values for first paint (before rAF starts)
   const fillTopInit = h - (h * 0.7) * (fillPct / 100);
@@ -1599,14 +1603,20 @@ function ActivityTicker({ tokens }) {
         <span style={{ fontSize: 10, color: 'var(--fg-dim)', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Activity</span>
       </div>
       
-      <div style={{ display: 'flex', gap: 32, animation: 'tickerScroll 80s linear infinite', whiteSpace: 'nowrap', paddingLeft: 160 }}>
-        {[...events, ...events, ...events].map((e, i) => <ActivityEvent key={i} event={e} />)}
+      <div style={{ display: 'flex', whiteSpace: 'nowrap', willChange: 'transform', animation: 'tickerScroll 80s linear infinite' }}>
+        {/* Two identical copies, marquee translates exactly -50% to loop seamlessly */}
+        <div style={{ display: 'flex', gap: 32, paddingRight: 32 }}>
+          {events.map((e, i) => <ActivityEvent key={`a-${i}`} event={e} />)}
+        </div>
+        <div style={{ display: 'flex', gap: 32, paddingRight: 32 }}>
+          {events.map((e, i) => <ActivityEvent key={`b-${i}`} event={e} />)}
+        </div>
       </div>
       
       <style>{`
         @keyframes tickerScroll {
           from { transform: translateX(0); }
-          to { transform: translateX(-33.33%); }
+          to { transform: translateX(-50%); }
         }
       `}</style>
     </div>
