@@ -1817,11 +1817,10 @@ function HeroVault() {
   useEffect(() => {
     let cancelled = false;
     const seq = async () => {
-      // ACT 1 — THE FILL (~3s): rapid confident climb
-      // Step by 5% to reduce React rerenders (visually identical at this speed)
-      for (let i = 20; i <= 95; i += 5) {
+      // ACT 1 — THE FILL (~3s): rapid confident climb, smooth 1% steps
+      for (let i = 20; i <= 95; i += 1) {
         if (cancelled) return;
-        await new Promise(r => setTimeout(r, 190));
+        await new Promise(r => setTimeout(r, 38));
         setFillPct(i);
       }
       if (cancelled) return;
@@ -2739,8 +2738,48 @@ function TheNetwork({ tokens }) {
 
 // Full-width constellation rendering — extracted so the parent can position it freely
 function ConstellationStars({ nodes, reveal, pulseIdx }) {
+  // Ambient star field — fills empty space with low-opacity pinpoints
+  // Distribution: full canvas, but opacity fades at top and bottom edges
+  const ambientStars = useMemo(() => {
+    const stars = [];
+    const count = 220;
+    for (let i = 0; i < count; i++) {
+      const x = Math.random() * 100;
+      const y = Math.random() * 100;
+      // Vertical falloff: brightest in middle band (40-60%), fades to edges
+      const distFromCenter = Math.abs(y - 50) / 50;
+      const verticalOpacity = Math.max(0.05, 1 - Math.pow(distFromCenter, 1.4));
+      // Random size and base brightness for variety
+      const sizeRoll = Math.random();
+      const r = sizeRoll < 0.7 ? 0.4 : sizeRoll < 0.92 ? 0.7 : 1.0;
+      const brightness = (0.15 + Math.random() * 0.35) * verticalOpacity;
+      // Subtle color tint — mostly steel-blue, occasional purple
+      const color = Math.random() < 0.18 ? '#9f7aea' : '#6ba3ff';
+      stars.push({ x, y, r, brightness, color });
+    }
+    return stars;
+  }, []);
+  
   return (
     <>
+      {/* AMBIENT STAR FIELD — sits furthest back, near-invisible texture */}
+      <svg viewBox="0 0 1500 620" preserveAspectRatio="none" style={{ 
+        position: 'absolute', inset: 0, width: '100%', height: '100%',
+        opacity: reveal ? 1 : 0,
+        transition: 'opacity 1200ms ease 200ms',
+      }}>
+        {ambientStars.map((s, i) => (
+          <circle
+            key={`amb-${i}`}
+            cx={`${s.x}%`}
+            cy={`${s.y}%`}
+            r={s.r}
+            fill={s.color}
+            opacity={s.brightness}
+          />
+        ))}
+      </svg>
+      
       {/* faint grid lines suggesting latitude / longitude */}
       <svg viewBox="0 0 1500 620" preserveAspectRatio="none" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.4 }}>
         {[80, 160, 250, 360, 460, 540].map(y => (
