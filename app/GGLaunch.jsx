@@ -1447,7 +1447,6 @@ function HomePage({ navigate, tokens, tvl, feesGenerated }) {
       <TheNetwork tokens={tokens} />
       <Manifesto />
       <TheTape />
-      <TheForge />
       <Reveal><FinalCTA navigate={navigate} /></Reveal>
       <TheSeal />
       {showFloater && <FloatingVault />}
